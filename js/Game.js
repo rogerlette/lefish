@@ -1,4 +1,4 @@
-import { BASE_SPEED, MIN_SPEED, SPEED_INCREMENT, LOVE_MESSAGES } from './constants.js';
+import { BASE_SPEED, MIN_SPEED, SPEED_INCREMENT, TROUT_MESSAGES } from './constants.js';
 import Snake from './Snake.js';
 import Food from './Food.js';
 import Renderer from './Renderer.js';
@@ -84,7 +84,7 @@ export default class Game {
       localStorage.setItem('snake-high-score', this.highScore);
     }
 
-    this.overlayTitle.textContent = 'GAME OVER';
+    this.overlayTitle.textContent = 'LE HÉRON A FAIM...';
     this.overlayText.textContent =
       `Score : ${this.score}  —  Appuie sur Espace pour rejouer`;
     this.overlay.classList.remove('hidden');
@@ -93,7 +93,7 @@ export default class Game {
   /* ---- Helpers ---- */
 
   showLoveMessage() {
-    const msg = LOVE_MESSAGES[Math.floor(Math.random() * LOVE_MESSAGES.length)];
+    const msg = TROUT_MESSAGES[Math.floor(Math.random() * TROUT_MESSAGES.length)];
     this.loveMessageEl.textContent = msg;
     this.loveMessageEl.classList.remove('show');
     // Force reflow to restart animation

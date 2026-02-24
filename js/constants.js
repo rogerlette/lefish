@@ -9,10 +9,11 @@ export const MIN_SPEED = 60;
 export const SPEED_INCREMENT = 2;
 
 export const COLORS = {
-  background: '#16213e',
+  background: '#1a2a3a',
   gridLine: 'rgba(255, 255, 255, 0.03)',
-  snakeEye: '#1a1a2e',
-  food: '#ff6b6b',
+  heronEye: '#ff8800',
+  trout: '#c0c0c0',
+  troutSpots: '#4a6741',
 };
 
 export const DIRECTIONS = {
@@ -22,25 +23,25 @@ export const DIRECTIONS = {
   RIGHT: { x:  1, y:  0 },
 };
 
-export const LOVE_MESSAGES = [
-  'Je t\'aime Timothé',
-  'Timothé, tu es mon soleil',
-  'Mon coeur bat pour toi Timothé',
-  'Timothé, tu me rends heureux',
-  'Tu es magnifique Timothé',
-  'Timothé, mon amour',
-  'Je pense à toi Timothé',
-  'Timothé, tu illumines ma vie',
-  'Tu es unique Timothé',
-  'Timothé, mon étoile',
-  'Je suis fou de toi Timothé',
-  'Timothé, tu es parfait',
-  'Mon monde c\'est toi Timothé',
-  'Timothé, je t\'adore',
-  'Tu es mon bonheur Timothé',
-  'Timothé, mon trésor',
-  'Chaque jour avec toi est magique Timothé',
-  'Timothé, tu fais battre mon coeur',
-  'Tu es tout pour moi Timothé',
-  'Timothé, pour toujours',
+export const TROUT_MESSAGES = [
+  'Mmmh, une truite bien fraîche !',
+  'Rien ne vaut une bonne truite',
+  'La truite, reine des rivières',
+  'Délicieuse truite au beurre',
+  'Truite grillée, un pur délice',
+  'La truite fond dans le bec',
+  'Encore une truite savoureuse !',
+  'La truite, c\'est la vie',
+  'Truite au four, un régal',
+  'Quel festin de truite !',
+  'La meilleure truite du coin',
+  'Truite fraîche du jour, miam',
+  'Un héron ne dit jamais non à une truite',
+  'Truite à la meunière, exquis !',
+  'Cette truite est divine',
+  'Vive la truite !',
+  'La truite, mon péché mignon',
+  'Truite fumée, un délice absolu',
+  'Une truite de plus au compteur !',
+  'La pêche est bonne aujourd\'hui',
 ];

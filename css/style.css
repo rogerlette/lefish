@@ -83,7 +83,7 @@ h1 {
   font-size: 1rem;
 }
 
-/* ---------- Love messages ---------- */
+/* ---------- Trout messages ---------- */
 
 #love-message {
   position: fixed;
@@ -92,8 +92,8 @@ h1 {
   transform: translate(-50%, -50%);
   font-size: 1.6rem;
   font-weight: bold;
-  color: #ff6b9d;
-  text-shadow: 0 0 20px rgba(255, 107, 157, 0.6), 0 0 40px rgba(255, 107, 157, 0.3);
+  color: #88ccff;
+  text-shadow: 0 0 20px rgba(136, 204, 255, 0.6), 0 0 40px rgba(136, 204, 255, 0.3);
   pointer-events: none;
   opacity: 0;
   z-index: 100;
