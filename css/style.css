@@ -1,0 +1,161 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #1a1a2e;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #e0e0e0;
+}
+
+h1 {
+  font-size: 2.5rem;
+  margin-bottom: 10px;
+  color: #00d4aa;
+  text-shadow: 0 0 20px rgba(0, 212, 170, 0.3);
+  letter-spacing: 4px;
+}
+
+/* ---------- Score board ---------- */
+
+#score-board {
+  display: flex;
+  gap: 40px;
+  margin-bottom: 15px;
+  font-size: 1.1rem;
+}
+
+#score-board span {
+  color: #00d4aa;
+  font-weight: bold;
+}
+
+/* ---------- Canvas ---------- */
+
+#canvas-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+#game-canvas {
+  border: 2px solid #00d4aa;
+  border-radius: 4px;
+  box-shadow: 0 0 30px rgba(0, 212, 170, 0.15);
+  background: #16213e;
+}
+
+/* ---------- Overlay ---------- */
+
+#overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(22, 33, 62, 0.85);
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+#overlay.hidden {
+  display: none;
+}
+
+#overlay h2 {
+  font-size: 2rem;
+  color: #ff6b6b;
+  margin-bottom: 10px;
+}
+
+#overlay p {
+  color: #ccc;
+  font-size: 1rem;
+}
+
+/* ---------- Controls ---------- */
+
+#controls {
+  margin-top: 20px;
+  text-align: center;
+}
+
+#controls p {
+  color: #888;
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+}
+
+#start-btn {
+  padding: 12px 40px;
+  font-size: 1.1rem;
+  background: #00d4aa;
+  color: #1a1a2e;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  letter-spacing: 1px;
+  transition: background 0.2s, transform 0.1s;
+}
+
+#start-btn:hover {
+  background: #00f0c0;
+  transform: scale(1.05);
+}
+
+#start-btn:active {
+  transform: scale(0.97);
+}
+
+/* ---------- Mobile d-pad ---------- */
+
+#mobile-controls {
+  display: none;
+  margin-top: 20px;
+  position: relative;
+  width: 160px;
+  height: 160px;
+}
+
+.d-btn {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  background: rgba(0, 212, 170, 0.2);
+  border: 1px solid #00d4aa;
+  border-radius: 8px;
+  color: #00d4aa;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.d-btn:active {
+  background: rgba(0, 212, 170, 0.5);
+}
+
+#btn-up    { top: 0;    left: 55px; }
+#btn-down  { bottom: 0; left: 55px; }
+#btn-left  { top: 55px; left: 0; }
+#btn-right { top: 55px; right: 0; }
+
+@media (pointer: coarse) {
+  #mobile-controls {
+    display: block;
+  }
+}
