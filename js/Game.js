@@ -84,7 +84,7 @@ export default class Game {
       localStorage.setItem('snake-high-score', this.highScore);
     }
 
-    this.overlayTitle.textContent = 'LE HÉRON A FAIM...';
+    this.overlayTitle.textContent = 'HUNGRY HÉRON A FAIM...';
     this.overlayText.textContent =
       `Score : ${this.score}  —  Appuie sur Espace pour rejouer`;
     this.overlay.classList.remove('hidden');
