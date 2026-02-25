@@ -1,4 +1,4 @@
-import { GRID_SIZE, COLS, ROWS, COLORS } from './constants.js';
+import { GRID_SIZE, COLS, ROWS, COLORS, TROUT_SPRITE, TROUT_PALETTE } from './constants.js';
 
 export default class Renderer {
   constructor(canvas) {
@@ -155,6 +155,47 @@ export default class Renderer {
     ctx.beginPath();
     ctx.arc(cx + w / 4, cy - 1, 1.2, 0, Math.PI * 2);
     ctx.fill();
+  }
+
+  /* ---------- Pixel-art trout ---------- */
+
+  drawPixelTrout(x, y, pixelSize = 4, flip = false) {
+    const { ctx } = this;
+
+    for (let row = 0; row < TROUT_SPRITE.length; row++) {
+      const cols = TROUT_SPRITE[row];
+      for (let col = 0; col < cols.length; col++) {
+        const val = cols[col];
+        if (val === 0) continue;
+
+        const drawCol = flip ? (cols.length - 1 - col) : col;
+        ctx.fillStyle = TROUT_PALETTE[val];
+        ctx.fillRect(
+          x + drawCol * pixelSize,
+          y + row * pixelSize,
+          pixelSize,
+          pixelSize,
+        );
+      }
+    }
+  }
+
+  drawTitleScreen(troutList, bubbles) {
+    this.clear();
+    this.drawGrid();
+
+    for (const t of troutList) {
+      this.drawPixelTrout(t.x, t.y, t.size, t.flip);
+    }
+
+    // Draw bubbles
+    const { ctx } = this;
+    ctx.fillStyle = 'rgba(126, 184, 208, 0.4)';
+    for (const b of bubbles) {
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   render(snake, food) {
