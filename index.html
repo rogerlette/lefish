@@ -3,37 +3,239 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Héron Pêcheur</title>
-  <link rel="stylesheet" href="css/style.css">
+  <title>AquaStock — Charles Murgat</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-  <h1>HÉRON PÊCHEUR</h1>
 
-  <div id="score-board">
-    <div>Truites : <span id="score">0</span></div>
-    <div>Record : <span id="high-score">0</span></div>
+<!-- ================================================================
+     HEADER
+     ================================================================ -->
+<header>
+  <div class="logo">
+    <div class="logo-badge" style="background:white;border:1px solid var(--border);padding:2px;width:36px;height:36px">
+      <img id="logoImg" alt="Charles Murgat" style="width:100%;height:100%;object-fit:contain;">
+    </div>
+    AquaStock
   </div>
 
-  <div id="canvas-wrapper">
-    <canvas id="game-canvas" width="400" height="400"></canvas>
-    <div id="overlay">
-      <h2 id="overlay-title">HÉRON PÊCHEUR</h2>
-      <p id="overlay-text">Appuie sur Espace ou le bouton pour jouer</p>
+  <div class="header-right">
+    <!-- Navigation temporelle -->
+    <div class="date-nav">
+      <button class="nav-btn" onclick="shiftDays(-30)" title="−30 jours">«</button>
+      <button class="nav-btn" onclick="shiftDays(-7)"  title="−7 jours">‹</button>
+      <button class="nav-btn" onclick="shiftDays(-1)"  title="−1 jour">−</button>
+      <span class="date-display" id="dateDisplay">—</span>
+      <button class="nav-btn" onclick="shiftDays(1)"   title="+1 jour">+</button>
+      <button class="nav-btn" onclick="shiftDays(7)"   title="+7 jours">›</button>
+      <button class="nav-btn" onclick="shiftDays(30)"  title="+30 jours">»</button>
+    </div>
+
+    <button class="btn btn-curves" onclick="openGrowthEditor()">📈 Croissance</button>
+    <button class="btn btn-curves" onclick="openCalibreEditor()" style="margin-left:6px">📐 Calibres</button>
+    <button class="btn btn-curves" id="darkToggleBtn" onclick="toggleDark()" style="margin-left:6px" title="Mode sombre">☀️</button>
+    <button class="btn btn-add"    onclick="openModal(null, null)" style="margin-left:6px">+ Nouveau lot</button>
+  </div>
+</header>
+
+<!-- ================================================================
+     BARRE RÉSUMÉ
+     ================================================================ -->
+<div class="summary-bar" id="summaryBar"></div>
+
+<!-- ================================================================
+     CONTENU PRINCIPAL
+     ================================================================ -->
+<main>
+  <div id="speciesList"></div>
+</main>
+
+<!-- ================================================================
+     MODAL — AJOUT / MODIFICATION LOT
+     ================================================================ -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-title">Ajouter un lot</div>
+    <div class="modal-subtitle">Renseignez les informations du nouveau lot</div>
+
+    <div class="section-label">Espèce</div>
+    <div id="speciesPickerWrap"></div>
+
+    <div class="section-label">Calibre</div>
+    <div id="calibrePickerWrap"></div>
+
+    <div class="divider"></div>
+
+    <div class="fg-row">
+      <div class="fg">
+        <label>Code / nom du lot</label>
+        <input type="text" id="f-name" placeholder="ex : A1, Bassin Nord…">
+      </div>
+      <div class="fg">
+        <label>Quantité (kg)</label>
+        <input type="number" id="f-qty" min="1" step="1" placeholder="ex : 500">
+      </div>
+    </div>
+
+    <div class="fg-row">
+      <div class="fg">
+        <label>Poids actuel (g)</label>
+        <input type="number" id="f-size" min="1" step="10" placeholder="ex : 350">
+      </div>
+      <div class="fg">
+        <label>Cible min (g)</label>
+        <input type="number" id="f-target" min="0" step="10" placeholder="ex : 200">
+      </div>
+    </div>
+
+    <div class="fg-row">
+      <div class="fg">
+        <label>Cible max (g)</label>
+        <input type="number" id="f-max" min="0" step="10" placeholder="ex : 400">
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="fg-row">
+      <div class="fg">
+        <label>Prix de revient (€/kg)</label>
+        <input type="number" id="f-cost" min="0" step="0.01" placeholder="ex : 7.80">
+      </div>
+      <div class="fg">
+        <label>Prix de vente (€/kg)</label>
+        <input type="number" id="f-sale" min="0" step="0.01" placeholder="ex : 9.50">
+      </div>
+    </div>
+
+    <!-- Champ caché (ancienne logique) -->
+    <select id="f-unsellable" style="display:none">
+      <option value="0">Actif</option>
+    </select>
+
+    <div class="modal-actions">
+      <button class="btn btn-cancel"  onclick="closeModal()">Annuler</button>
+      <button class="btn btn-confirm" onclick="confirmAdd()">Ajouter le lot</button>
     </div>
   </div>
+</div>
 
-  <div id="controls">
-    <p>Utilise les flèches ou ZQSD pour diriger le héron</p>
-    <button id="start-btn">JOUER</button>
+<!-- ================================================================
+     MODAL — GRAPHIQUE LOT
+     ================================================================ -->
+<div class="modal-overlay" id="chartOverlay">
+  <div class="modal chart-modal">
+    <div class="chart-modal-header">
+      <div>
+        <div class="modal-title" id="chartTitle">—</div>
+        <div class="modal-subtitle" id="chartSubtitle">—</div>
+      </div>
+      <button class="chart-close-btn" onclick="closeChart()">✕</button>
+    </div>
+    <canvas id="chartCanvas"></canvas>
   </div>
+</div>
 
-  <div id="mobile-controls">
-    <div class="d-btn" id="btn-up">&#9650;</div>
-    <div class="d-btn" id="btn-down">&#9660;</div>
-    <div class="d-btn" id="btn-left">&#9664;</div>
-    <div class="d-btn" id="btn-right">&#9654;</div>
+<!-- ================================================================
+     MODAL — ÉDITEUR DE CROISSANCE
+     ================================================================ -->
+<div class="modal-overlay growth-overlay" id="growthOverlay">
+  <div class="growth-modal">
+    <div class="growth-modal-header">
+      <div>
+        <div class="modal-title">Courbes de croissance & coût</div>
+        <div class="modal-subtitle" id="growthEditorSubtitle">Gain de poids journalier (g/jour) selon le poids vif (g)</div>
+      </div>
+      <button class="chart-close-btn" onclick="closeGrowthEditor()">✕</button>
+    </div>
+
+    <div class="growth-mode-bar">
+      <button class="growth-mode-btn active" id="modeGrowthBtn" onclick="setGrowthMode('growth')">Croissance</button>
+      <button class="growth-mode-btn"        id="modeCostBtn"   onclick="setGrowthMode('cost')">Prix de revient</button>
+    </div>
+
+    <div class="growth-tabs" id="growthTabs"></div>
+
+    <canvas id="growthCanvas"></canvas>
+    <canvas id="costCanvas"   style="display:none"></canvas>
+
+    <div class="growth-table-wrap">
+      <table class="growth-table">
+        <thead><tr id="growthTableHead"></tr></thead>
+        <tbody id="growthTableBody"></tbody>
+      </table>
+    </div>
   </div>
+</div>
 
-  <script type="module" src="js/main.js"></script>
+<!-- ================================================================
+     MODAL — ÉDITEUR DE CALIBRES
+     ================================================================ -->
+<div class="modal-overlay calibre-editor-overlay" id="calibreEditorOverlay">
+  <div class="calibre-editor-modal">
+    <div class="growth-modal-header">
+      <div>
+        <div class="modal-title">Éditeur de calibres</div>
+        <div class="modal-subtitle">Définissez les gammes de poids par type de produit</div>
+      </div>
+      <button class="chart-close-btn" onclick="closeCalibreEditor()">✕</button>
+    </div>
+    <div style="overflow-y:auto;flex:1">
+      <table class="calibre-editor-table">
+        <thead><tr>
+          <th>Label</th><th>Type</th>
+          <th>Min (g)</th><th>Max (g)</th>
+          <th>Cible min (g)</th><th>Cible max (g)</th>
+          <th>Espèces</th>
+          <th></th>
+        </tr></thead>
+        <tbody id="calibreEditorBody"></tbody>
+      </table>
+    </div>
+    <div class="calibre-add-row">
+      <button class="btn btn-confirm" onclick="addCalibre()">+ Ajouter un calibre</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     SCRIPTS — ordre de chargement important
+     ================================================================ -->
+<script src="js/logo.js"></script>
+<script src="js/config.js"></script>
+<script src="js/state.js"></script>
+<script src="js/business.js"></script>
+<script src="js/render.js"></script>
+<script src="js/actions.js"></script>
+<script src="js/chart.js"></script>
+<script src="js/data.js"></script>
+
+<script>
+  // Injection du logo (base64 embarqué pour usage hors-ligne)
+  document.getElementById('logoImg').src = LOGO_B64_DATA;
+
+  // Fermeture des modals en cliquant sur le fond
+  document.getElementById('modalOverlay').addEventListener('click',        function(e) { if (e.target === this) closeModal(); });
+  document.getElementById('chartOverlay').addEventListener('click',        function(e) { if (e.target === this) closeChart(); });
+  document.getElementById('growthOverlay').addEventListener('click',       function(e) { if (e.target === this) closeGrowthEditor(); });
+  document.getElementById('calibreEditorOverlay').addEventListener('click',function(e) { if (e.target === this) closeCalibreEditor(); });
+
+  // Délégation "à sortir"
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.toremove-btn');
+    if (!btn) return;
+    e.stopImmediatePropagation(); e.preventDefault();
+    const row = btn.closest('tr[data-lot-id]');
+    if (!row) return;
+    const id  = parseInt(row.dataset.lotId, 10);
+    const lot = lots.find(l => l.id === id);
+    if (!lot) return;
+    lot.toRemove = !lot.toRemove;
+    render();
+  }, true);
+
+  render();
+</script>
 </body>
 </html>
