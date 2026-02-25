@@ -30,15 +30,15 @@ export default class Renderer {
     }
   }
 
-  drawSnake(snake) {
+  drawHeron(snake) {
     const { ctx } = this;
     const { segments, direction } = snake;
 
+    // Draw body segments (grey feathers fading to white)
     segments.forEach((seg, i) => {
       const ratio = 1 - i / segments.length;
-      const g = Math.round(180 + ratio * 72);
-      const b = Math.round(140 + ratio * 30);
-      ctx.fillStyle = `rgb(0, ${g}, ${b})`;
+      const grey = Math.round(160 + ratio * 80);
+      ctx.fillStyle = `rgb(${grey}, ${grey}, ${Math.min(255, grey + 20)})`;
 
       const padding = i === 0 ? 1 : 2;
       ctx.beginPath();
@@ -52,19 +52,55 @@ export default class Renderer {
       ctx.fill();
     });
 
-    this.drawEyes(snake.head, direction);
+    // Draw head details: beak + eye
+    this.drawBeak(snake.head, direction);
+    this.drawEye(snake.head, direction);
   }
 
-  drawEyes(head, direction) {
+  drawBeak(head, direction) {
     const { ctx } = this;
-    ctx.fillStyle = COLORS.snakeEye;
+    const cx = head.x * GRID_SIZE + GRID_SIZE / 2;
+    const cy = head.y * GRID_SIZE + GRID_SIZE / 2;
+
+    ctx.fillStyle = '#f0a500';
+    ctx.beginPath();
+
+    if (direction.x === 1) {
+      // right
+      ctx.moveTo(cx + 6, cy - 2);
+      ctx.lineTo(cx + 14, cy);
+      ctx.lineTo(cx + 6, cy + 2);
+    } else if (direction.x === -1) {
+      // left
+      ctx.moveTo(cx - 6, cy - 2);
+      ctx.lineTo(cx - 14, cy);
+      ctx.lineTo(cx - 6, cy + 2);
+    } else if (direction.y === -1) {
+      // up
+      ctx.moveTo(cx - 2, cy - 6);
+      ctx.lineTo(cx, cy - 14);
+      ctx.lineTo(cx + 2, cy - 6);
+    } else {
+      // down
+      ctx.moveTo(cx - 2, cy + 6);
+      ctx.lineTo(cx, cy + 14);
+      ctx.lineTo(cx + 2, cy + 6);
+    }
+
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  drawEye(head, direction) {
+    const { ctx } = this;
+    ctx.fillStyle = COLORS.heronEye;
     const size = 3;
 
     const positions = {
-      right: [[13, 5], [13, 12]],
-      left:  [[ 4, 5], [ 4, 12]],
-      up:    [[ 5, 4], [12,  4]],
-      down:  [[ 5, 13],[12, 13]],
+      right: [[11, 5], [11, 12]],
+      left:  [[ 6, 5], [ 6, 12]],
+      up:    [[ 5, 6], [12,  6]],
+      down:  [[ 5, 11],[12, 11]],
     };
 
     let key = 'right';
@@ -73,32 +109,58 @@ export default class Renderer {
     else if (direction.y === 1)  key = 'down';
 
     for (const [ox, oy] of positions[key]) {
-      ctx.fillRect(head.x * GRID_SIZE + ox, head.y * GRID_SIZE + oy, size, size);
+      ctx.beginPath();
+      ctx.arc(head.x * GRID_SIZE + ox, head.y * GRID_SIZE + oy, size / 2, 0, Math.PI * 2);
+      ctx.fill();
     }
   }
 
-  drawFood(food) {
+  drawTrout(food) {
     const { ctx } = this;
-    ctx.fillStyle = COLORS.food;
-    ctx.shadowColor = COLORS.food;
-    ctx.shadowBlur = 10;
+    const cx = food.x * GRID_SIZE + GRID_SIZE / 2;
+    const cy = food.y * GRID_SIZE + GRID_SIZE / 2;
+    const w = GRID_SIZE - 4;
+    const h = GRID_SIZE / 2 - 1;
+
+    // Fish body
+    ctx.fillStyle = '#7eb8d0';
+    ctx.shadowColor = '#7eb8d0';
+    ctx.shadowBlur = 8;
 
     ctx.beginPath();
-    ctx.arc(
-      food.x * GRID_SIZE + GRID_SIZE / 2,
-      food.y * GRID_SIZE + GRID_SIZE / 2,
-      GRID_SIZE / 2 - 3,
-      0,
-      Math.PI * 2,
-    );
+    ctx.ellipse(cx, cy, w / 2, h / 2, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.shadowBlur = 0;
+
+    // Tail fin
+    ctx.fillStyle = '#5a9ab5';
+    ctx.beginPath();
+    ctx.moveTo(cx - w / 2, cy);
+    ctx.lineTo(cx - w / 2 - 4, cy - 4);
+    ctx.lineTo(cx - w / 2 - 4, cy + 4);
+    ctx.closePath();
+    ctx.fill();
+
+    // Spots (trout pattern)
+    ctx.fillStyle = '#c45c3a';
+    const spots = [[cx - 2, cy - 1], [cx + 3, cy], [cx - 1, cy + 1]];
+    for (const [sx, sy] of spots) {
+      ctx.beginPath();
+      ctx.arc(sx, sy, 1, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Eye
+    ctx.fillStyle = '#1a1a2e';
+    ctx.beginPath();
+    ctx.arc(cx + w / 4, cy - 1, 1.2, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   render(snake, food) {
     this.clear();
     this.drawGrid();
-    this.drawSnake(snake);
-    this.drawFood(food);
+    this.drawHeron(snake);
+    this.drawTrout(food);
   }
 }

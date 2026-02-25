@@ -1,4 +1,4 @@
-import { BASE_SPEED, MIN_SPEED, SPEED_INCREMENT, LOVE_MESSAGES } from './constants.js';
+import { BASE_SPEED, MIN_SPEED, SPEED_INCREMENT } from './constants.js';
 import Snake from './Snake.js';
 import Food from './Food.js';
 import Renderer from './Renderer.js';
@@ -22,9 +22,6 @@ export default class Game {
     this.overlayTitle = document.getElementById('overlay-title');
     this.overlayText  = document.getElementById('overlay-text');
     this.startBtn     = document.getElementById('start-btn');
-
-    this.loveMessageEl = document.getElementById('love-message');
-    this.loveTimeout   = null;
 
     this.highScoreEl.textContent = this.highScore;
     this.showInitialScreen();
@@ -65,7 +62,6 @@ export default class Game {
       this.score++;
       this.scoreEl.textContent = this.score;
       this.food.spawn(this.snake);
-      this.showLoveMessage();
       this.scheduleLoop();
     } else {
       this.snake.trimTail();
@@ -86,25 +82,11 @@ export default class Game {
 
     this.overlayTitle.textContent = 'GAME OVER';
     this.overlayText.textContent =
-      `Score : ${this.score}  —  Appuie sur Espace pour rejouer`;
+      `Truites : ${this.score}  —  Appuie sur Espace pour rejouer`;
     this.overlay.classList.remove('hidden');
   }
 
   /* ---- Helpers ---- */
-
-  showLoveMessage() {
-    const msg = LOVE_MESSAGES[Math.floor(Math.random() * LOVE_MESSAGES.length)];
-    this.loveMessageEl.textContent = msg;
-    this.loveMessageEl.classList.remove('show');
-    // Force reflow to restart animation
-    void this.loveMessageEl.offsetWidth;
-    this.loveMessageEl.classList.add('show');
-
-    clearTimeout(this.loveTimeout);
-    this.loveTimeout = setTimeout(() => {
-      this.loveMessageEl.classList.remove('show');
-    }, 2000);
-  }
 
   scheduleLoop() {
     clearInterval(this.loopId);
