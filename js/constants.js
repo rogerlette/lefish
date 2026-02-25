@@ -9,10 +9,10 @@ export const MIN_SPEED = 60;
 export const SPEED_INCREMENT = 2;
 
 export const COLORS = {
-  background: '#16213e',
+  background: '#1a3a4a',
   gridLine: 'rgba(255, 255, 255, 0.03)',
-  snakeEye: '#1a1a2e',
-  food: '#ff6b6b',
+  heronEye: '#1a1a2e',
+  trout: '#c0c0c0',
 };
 
 export const DIRECTIONS = {
@@ -21,26 +21,3 @@ export const DIRECTIONS = {
   LEFT:  { x: -1, y:  0 },
   RIGHT: { x:  1, y:  0 },
 };
-
-export const LOVE_MESSAGES = [
-  'Je t\'aime Timothé',
-  'Timothé, tu es mon soleil',
-  'Mon coeur bat pour toi Timothé',
-  'Timothé, tu me rends heureux',
-  'Tu es magnifique Timothé',
-  'Timothé, mon amour',
-  'Je pense à toi Timothé',
-  'Timothé, tu illumines ma vie',
-  'Tu es unique Timothé',
-  'Timothé, mon étoile',
-  'Je suis fou de toi Timothé',
-  'Timothé, tu es parfait',
-  'Mon monde c\'est toi Timothé',
-  'Timothé, je t\'adore',
-  'Tu es mon bonheur Timothé',
-  'Timothé, mon trésor',
-  'Chaque jour avec toi est magique Timothé',
-  'Timothé, tu fais battre mon coeur',
-  'Tu es tout pour moi Timothé',
-  'Timothé, pour toujours',
-];
