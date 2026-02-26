@@ -1,10 +1,12 @@
 /**
  * data.js
- * Chargement des lots depuis l'API MySQL.
+ * Chargement des espèces, calibres et lots depuis l'API MySQL.
  * Fallback sur les données de démonstration si l'API n'est pas disponible.
  */
 
-const API_BASE = 'api/lots.php';
+const API_BASE     = 'api/lots.php';
+const API_SPECIES  = 'api/species.php';
+const API_CALIBRES = 'api/calibres.php';
 
 // ── Données de démonstration (fallback si MySQL indisponible) ──
 const DEMO_LOTS = [
@@ -119,15 +121,73 @@ async function initDatabase(btn) {
 // ── Lancement du mode démo depuis l'écran d'erreur ──
 function startDemoMode() {
   hideErrorScreen();
+  initSpeciesFromData(DEFAULT_SPECIES);
+  initCalibresFromData(DEFAULT_CALIBRES);
   lots = DEMO_LOTS.map(l => ({ ...l, id: nextId++ }));
   dbConnected = false;
   document.getElementById('demoBanner').style.display = 'flex';
   render();
 }
 
+// ── Chargement des espèces depuis l'API ──
+async function loadSpeciesFromDb() {
+  const resp = await fetch(API_SPECIES);
+  const contentType = resp.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    throw new Error('species: réponse non-JSON');
+  }
+  if (!resp.ok) {
+    const body = await resp.json().catch(() => ({}));
+    throw new Error(body.error || 'Erreur serveur HTTP ' + resp.status);
+  }
+  const data = await resp.json();
+  if (Array.isArray(data) && data.length > 0) {
+    initSpeciesFromData(data);
+    return true;
+  }
+  return false;
+}
+
+// ── Chargement des calibres depuis l'API ──
+async function loadCalibresFromDb() {
+  const resp = await fetch(API_CALIBRES);
+  const contentType = resp.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    throw new Error('calibres: réponse non-JSON');
+  }
+  if (!resp.ok) {
+    const body = await resp.json().catch(() => ({}));
+    throw new Error(body.error || 'Erreur serveur HTTP ' + resp.status);
+  }
+  const data = await resp.json();
+  if (Array.isArray(data) && data.length > 0) {
+    initCalibresFromData(data);
+    return true;
+  }
+  return false;
+}
+
 // ── Chargement des lots depuis l'API ──
 async function loadLotsFromDb() {
   try {
+    // Charger d'abord les espèces et calibres en parallèle
+    const [speciesOk, calibresOk] = await Promise.all([
+      loadSpeciesFromDb(),
+      loadCalibresFromDb(),
+    ]);
+
+    if (!speciesOk || !calibresOk) {
+      // Tables vides = base pas encore initialisée
+      showErrorScreen(
+        'Base de données incomplète',
+        'Les tables espèces/calibres sont vides. Initialisez la base en appelant api/init.php depuis votre navigateur.'
+      );
+      return;
+    }
+
+    console.log('AquaStock : ' + SPECIES.length + ' espèces, ' + CALIBRES.length + ' calibres chargés depuis MySQL');
+
+    // Puis charger les lots
     const resp = await fetch(API_BASE);
 
     // Vérifier si la réponse est du JSON (et pas une page HTML "en construction")
@@ -234,6 +294,54 @@ async function bulkUpdateDb() {
     });
   } catch (e) {
     console.warn('AquaStock : erreur bulk update', e.message);
+  }
+}
+
+// ── Sauvegarde d'une espèce (paramètres de croissance/coût) ──
+async function saveSpeciesToDb(sp) {
+  if (!dbConnected) return;
+  try {
+    await fetch(API_SPECIES + '?key=' + encodeURIComponent(sp.key), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(sp),
+    });
+  } catch (e) {
+    console.warn('AquaStock : erreur sauvegarde espèce', e.message);
+  }
+}
+
+// ── Sauvegarde d'un calibre ──
+async function saveCalibreToDb(cal) {
+  if (!dbConnected) return;
+  try {
+    if (cal.id) {
+      await fetch(API_CALIBRES + '?id=' + cal.id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cal),
+      });
+    } else {
+      const resp = await fetch(API_CALIBRES, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cal),
+      });
+      const result = await resp.json();
+      if (result.id) cal.id = result.id;
+    }
+  } catch (e) {
+    console.warn('AquaStock : erreur sauvegarde calibre', e.message);
+  }
+}
+
+// ── Suppression d'un calibre ──
+async function deleteCalibreFromDb(calId) {
+  if (!dbConnected) return;
+  try {
+    await fetch(API_CALIBRES + '?id=' + calId, { method: 'DELETE' });
+  } catch (e) {
+    console.warn('AquaStock : erreur suppression calibre', e.message);
   }
 }
 

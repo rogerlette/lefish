@@ -1,6 +1,7 @@
 /**
  * config.js
- * Modèles de croissance (Gompertz) et de coût, données espèces et calibres.
+ * Modèles de croissance (Gompertz) et de coût.
+ * Les espèces et calibres sont chargés depuis la base de données (voir data.js).
  */
 
 // ================================================================
@@ -38,17 +39,27 @@ function buildCostTable(costHigh, costMin, costMature, optimalWeight) {
 }
 
 // ================================================================
-// ESPÈCES
+// ESPÈCES — Initialisées depuis la base de données (voir data.js)
 // ================================================================
-const SPECIES = [
+let SPECIES = [];
+
+// ================================================================
+// CALIBRES — Initialisés depuis la base de données (voir data.js)
+// ================================================================
+let CALIBRES = [];
+
+// ================================================================
+// DONNÉES PAR DÉFAUT (fallback si la base est indisponible)
+// ================================================================
+const DEFAULT_SPECIES = [
   {
     key: 'truite-arc',
     name: 'Truite Arc-en-ciel',
     latin: 'Oncorhynchus mykiss',
     color: '#0ea5e9',
     defaults: { costPrice: 7.80, salePrice: 9.50 },
-    growthTable: buildGrowthTable(4200, 0.0045),
-    costTable: buildCostTable(14.0, 6.2, 7.5, 300),
+    growthA: 4200, growthK: 0.0045,
+    costHigh: 14.0, costMin: 6.2, costMature: 7.5, optimalWeight: 300,
   },
   {
     key: 'truite-fario',
@@ -56,8 +67,8 @@ const SPECIES = [
     latin: 'Salmo trutta fario',
     color: '#7c3aed',
     defaults: { costPrice: 11.20, salePrice: 13.00 },
-    growthTable: buildGrowthTable(2200, 0.0032),
-    costTable: buildCostTable(18.0, 9.5, 11.0, 300),
+    growthA: 2200, growthK: 0.0032,
+    costHigh: 18.0, costMin: 9.5, costMature: 11.0, optimalWeight: 300,
   },
   {
     key: 'saumon-fontaine',
@@ -65,8 +76,8 @@ const SPECIES = [
     latin: 'Salvelinus fontinalis',
     color: '#f97316',
     defaults: { costPrice: 12.30, salePrice: 14.00 },
-    growthTable: buildGrowthTable(3000, 0.0038),
-    costTable: buildCostTable(18.0, 10.0, 12.0, 300),
+    growthA: 3000, growthK: 0.0038,
+    costHigh: 18.0, costMin: 10.0, costMature: 12.0, optimalWeight: 300,
   },
   {
     key: 'omble',
@@ -74,8 +85,8 @@ const SPECIES = [
     latin: 'Salvelinus alpinus',
     color: '#0d9488',
     defaults: { costPrice: 16.20, salePrice: 18.00 },
-    growthTable: buildGrowthTable(3500, 0.0025),
-    costTable: buildCostTable(24.0, 13.5, 16.0, 300),
+    growthA: 3500, growthK: 0.0025,
+    costHigh: 24.0, costMin: 13.5, costMature: 16.0, optimalWeight: 300,
   },
   {
     key: 'lavaret',
@@ -83,15 +94,12 @@ const SPECIES = [
     latin: 'Coregonus lavaretus',
     color: '#6366f1',
     defaults: { costPrice: 9.30, salePrice: 11.00 },
-    growthTable: buildGrowthTable(1600, 0.0028),
-    costTable: buildCostTable(15.0, 7.8, 9.2, 300),
+    growthA: 1600, growthK: 0.0028,
+    costHigh: 15.0, costMin: 7.8, costMature: 9.2, optimalWeight: 300,
   },
 ];
 
-// ================================================================
-// CALIBRES
-// ================================================================
-let CALIBRES = [
+const DEFAULT_CALIBRES = [
   { key: 'e200400',   label: 'Entier 200/400',   type: 'entier', min: 200,  max: 400,  targetMin: 200,  targetMax: 400,  species: ['truite-arc', 'truite-fario', 'saumon-fontaine', 'lavaret'] },
   { key: 'e8001200',  label: 'Entier 800/1200',  type: 'entier', min: 800,  max: 1200, targetMin: 800,  targetMax: 1200, species: ['truite-arc', 'truite-fario', 'saumon-fontaine', 'omble', 'lavaret'] },
   { key: 'e15002500', label: 'Entier 1500/2500', type: 'entier', min: 1500, max: 2500, targetMin: 1500, targetMax: 2500, species: ['truite-arc', 'saumon-fontaine', 'omble'] },
@@ -100,3 +108,26 @@ let CALIBRES = [
   { key: 'f200400',   label: 'Filet 200/400',    type: 'filet',  min: 200,  max: 400,  targetMin: 200,  targetMax: 400,  species: ['truite-arc', 'truite-fario', 'saumon-fontaine'] },
   { key: 'f400600',   label: 'Filet 400/600',    type: 'filet',  min: 400,  max: 600,  targetMin: 400,  targetMax: 600,  species: ['truite-arc', 'saumon-fontaine', 'omble'] },
 ];
+
+/**
+ * Construit les tables de croissance et coût pour une espèce à partir de ses paramètres.
+ */
+function buildSpeciesTables(sp) {
+  sp.growthTable = buildGrowthTable(sp.growthA, sp.growthK);
+  sp.costTable   = buildCostTable(sp.costHigh, sp.costMin, sp.costMature, sp.optimalWeight);
+  return sp;
+}
+
+/**
+ * Initialise SPECIES à partir de données brutes (API ou fallback).
+ */
+function initSpeciesFromData(data) {
+  SPECIES = data.map(sp => buildSpeciesTables({ ...sp }));
+}
+
+/**
+ * Initialise CALIBRES à partir de données brutes (API ou fallback).
+ */
+function initCalibresFromData(data) {
+  CALIBRES = data.map(c => ({ ...c }));
+}

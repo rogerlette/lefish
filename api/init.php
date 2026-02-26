@@ -3,8 +3,8 @@
  * init.php
  * Initialise la base de données AquaStock :
  *   - Crée la base si elle n'existe pas
- *   - Crée la table `lots`
- *   - Insère les données de démonstration si la table est vide
+ *   - Crée les tables `species`, `calibres`, `lots`
+ *   - Insère les données de démonstration si les tables sont vides
  *
  * Usage : appeler une seule fois via le navigateur → api/init.php
  */
@@ -24,6 +24,45 @@ try {
     $pdo->exec('CREATE DATABASE IF NOT EXISTS `' . DB_NAME . '` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
     $pdo->exec('USE `' . DB_NAME . '`');
 
+    // ── Table species ──
+    $pdo->exec('
+        CREATE TABLE IF NOT EXISTS `species` (
+            `key`              VARCHAR(30)    PRIMARY KEY,
+            `name`             VARCHAR(80)    NOT NULL,
+            `latin`            VARCHAR(120)   NOT NULL DEFAULT "",
+            `color`            VARCHAR(10)    NOT NULL DEFAULT "#0ea5e9",
+            `cost_price_default` DECIMAL(8,2) NOT NULL DEFAULT 0,
+            `sale_price_default` DECIMAL(8,2) NOT NULL DEFAULT 0,
+            `growth_a`         DECIMAL(10,2)  NOT NULL DEFAULT 4000,
+            `growth_k`         DECIMAL(10,6)  NOT NULL DEFAULT 0.004,
+            `cost_high`        DECIMAL(8,2)   NOT NULL DEFAULT 14,
+            `cost_min`         DECIMAL(8,2)   NOT NULL DEFAULT 6,
+            `cost_mature`      DECIMAL(8,2)   NOT NULL DEFAULT 7.5,
+            `optimal_weight`   INT UNSIGNED   NOT NULL DEFAULT 300,
+            `sort_order`       INT UNSIGNED   NOT NULL DEFAULT 0,
+            `created_at`       TIMESTAMP      DEFAULT CURRENT_TIMESTAMP,
+            `updated_at`       TIMESTAMP      DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ');
+
+    // ── Table calibres ──
+    $pdo->exec('
+        CREATE TABLE IF NOT EXISTS `calibres` (
+            `id`          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            `key`         VARCHAR(30)    NOT NULL UNIQUE,
+            `label`       VARCHAR(80)    NOT NULL,
+            `type`        ENUM("entier","filet") NOT NULL DEFAULT "entier",
+            `min`         INT UNSIGNED   NOT NULL DEFAULT 0,
+            `max`         INT UNSIGNED   NOT NULL DEFAULT 500,
+            `target_min`  INT UNSIGNED   NOT NULL DEFAULT 0,
+            `target_max`  INT UNSIGNED   NOT NULL DEFAULT 500,
+            `species`     JSON           NULL,
+            `sort_order`  INT UNSIGNED   NOT NULL DEFAULT 0,
+            `created_at`  TIMESTAMP      DEFAULT CURRENT_TIMESTAMP,
+            `updated_at`  TIMESTAMP      DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ');
+
     // ── Table lots ──
     $pdo->exec('
         CREATE TABLE IF NOT EXISTS `lots` (
@@ -41,10 +80,54 @@ try {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     ');
 
-    // ── Données de démonstration (uniquement si table vide) ──
-    $count = (int) $pdo->query('SELECT COUNT(*) FROM `lots`')->fetchColumn();
+    // ── Données de démonstration ──
+    $messages = [];
 
-    if ($count === 0) {
+    // -- Species --
+    $spCount = (int) $pdo->query('SELECT COUNT(*) FROM `species`')->fetchColumn();
+    if ($spCount === 0) {
+        $speciesData = [
+            ['truite-arc',      'Truite Arc-en-ciel', 'Oncorhynchus mykiss',    '#0ea5e9',  7.80,  9.50, 4200, 0.0045, 14.0,  6.2,  7.5,  300, 0],
+            ['truite-fario',    'Truite Fario',       'Salmo trutta fario',      '#7c3aed', 11.20, 13.00, 2200, 0.0032, 18.0,  9.5, 11.0,  300, 1],
+            ['saumon-fontaine', 'Saumon de Fontaine',  'Salvelinus fontinalis',  '#f97316', 12.30, 14.00, 3000, 0.0038, 18.0, 10.0, 12.0,  300, 2],
+            ['omble',           'Omble Chevalier',     'Salvelinus alpinus',     '#0d9488', 16.20, 18.00, 3500, 0.0025, 24.0, 13.5, 16.0,  300, 3],
+            ['lavaret',         'Lavaret',             'Coregonus lavaretus',    '#6366f1',  9.30, 11.00, 1600, 0.0028, 15.0,  7.8,  9.2,  300, 4],
+        ];
+        $stmt = $pdo->prepare('
+            INSERT INTO `species` (`key`, `name`, `latin`, `color`, `cost_price_default`, `sale_price_default`, `growth_a`, `growth_k`, `cost_high`, `cost_min`, `cost_mature`, `optimal_weight`, `sort_order`)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ');
+        foreach ($speciesData as $row) {
+            $stmt->execute($row);
+        }
+        $messages[] = count($speciesData) . ' espèces';
+    }
+
+    // -- Calibres --
+    $calCount = (int) $pdo->query('SELECT COUNT(*) FROM `calibres`')->fetchColumn();
+    if ($calCount === 0) {
+        $calibresData = [
+            ['e200400',   'Entier 200/400',   'entier', 200,  400,  200,  400,  '["truite-arc","truite-fario","saumon-fontaine","lavaret"]', 0],
+            ['e8001200',  'Entier 800/1200',  'entier', 800,  1200, 800,  1200, '["truite-arc","truite-fario","saumon-fontaine","omble","lavaret"]', 1],
+            ['e15002500', 'Entier 1500/2500', 'entier', 1500, 2500, 1500, 2500, '["truite-arc","saumon-fontaine","omble"]', 2],
+            ['e25003500', 'Entier 2500/3500', 'entier', 2500, 3500, 2500, 3500, '["truite-arc","saumon-fontaine"]', 3],
+            ['f160200',   'Filet 160/200',    'filet',  160,  200,  160,  200,  '["truite-arc","truite-fario","lavaret"]', 4],
+            ['f200400',   'Filet 200/400',    'filet',  200,  400,  200,  400,  '["truite-arc","truite-fario","saumon-fontaine"]', 5],
+            ['f400600',   'Filet 400/600',    'filet',  400,  600,  400,  600,  '["truite-arc","saumon-fontaine","omble"]', 6],
+        ];
+        $stmt = $pdo->prepare('
+            INSERT INTO `calibres` (`key`, `label`, `type`, `min`, `max`, `target_min`, `target_max`, `species`, `sort_order`)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ');
+        foreach ($calibresData as $row) {
+            $stmt->execute($row);
+        }
+        $messages[] = count($calibresData) . ' calibres';
+    }
+
+    // -- Lots --
+    $lotCount = (int) $pdo->query('SELECT COUNT(*) FROM `lots`')->fetchColumn();
+    if ($lotCount === 0) {
         $demo = [
             // Truite Arc-en-ciel
             ['A1', 'truite-arc', 'e200400',   620, 430,  7.80,  9.50],
@@ -108,15 +191,18 @@ try {
         foreach ($demo as $row) {
             $stmt->execute($row);
         }
+        $messages[] = count($demo) . ' lots';
+    }
 
+    if (count($messages) > 0) {
         echo json_encode([
             'success' => true,
-            'message' => 'Base aquastock créée avec ' . count($demo) . ' lots de démonstration.',
+            'message' => 'Base aquastock créée avec ' . implode(', ', $messages) . ' de démonstration.',
         ]);
     } else {
         echo json_encode([
             'success' => true,
-            'message' => 'Base aquastock déjà initialisée (' . $count . ' lots existants).',
+            'message' => 'Base aquastock déjà initialisée.',
         ]);
     }
 

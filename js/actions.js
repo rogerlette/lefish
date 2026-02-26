@@ -194,6 +194,7 @@ function toggleCalibreSpecies(i, spKey, checked) {
   } else {
     CALIBRES[i].species = CALIBRES[i].species.filter(k => k !== spKey);
   }
+  saveCalibreToDb(CALIBRES[i]);
   renderCalibreEditorTable();
 }
 
@@ -202,16 +203,20 @@ function updateCalibre(i, field, val) {
   if (field === 'label') {
     CALIBRES[i].key = val.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12) + i;
   }
+  saveCalibreToDb(CALIBRES[i]);
 }
 
 function addCalibre() {
   const i = CALIBRES.length;
-  CALIBRES.push({ key: 'new' + i, label: 'Nouveau ' + i, type: 'entier', min: 0, max: 500, targetMin: 0, targetMax: 500 });
+  const cal = { key: 'new' + i, label: 'Nouveau ' + i, type: 'entier', min: 0, max: 500, targetMin: 0, targetMax: 500, species: [] };
+  CALIBRES.push(cal);
+  saveCalibreToDb(cal);
   renderCalibreEditorTable();
 }
 
 function deleteCalibre(i) {
   if (CALIBRES.length <= 1) return;
-  CALIBRES.splice(i, 1);
+  const removed = CALIBRES.splice(i, 1)[0];
+  if (removed.id) deleteCalibreFromDb(removed.id);
   renderCalibreEditorTable();
 }
