@@ -7,6 +7,6 @@
 define('DB_HOST', 'fisheoupas.mysql.db');
 define('DB_PORT', 3306);
 define('DB_NAME', 'aquastock');
-define('DB_USER', 'fishoupas');
+define('DB_USER', 'fisheoupas');
 define('DB_PASS', '1898Truite');
 define('DB_CHARSET', 'utf8mb4');
