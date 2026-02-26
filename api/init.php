@@ -1,8 +1,8 @@
 <?php
 /**
  * init.php
- * Initialise la base de données AquaStock :
- *   - Crée la base si elle n'existe pas
+ * Initialise la base de données SQLite AquaStock :
+ *   - Crée le fichier SQLite si nécessaire
  *   - Crée les tables `species`, `calibres`, `lots`
  *   - Insère les données de démonstration si les tables sont vides
  *
@@ -14,77 +14,73 @@ require_once __DIR__ . '/config.php';
 header('Content-Type: application/json; charset=utf-8');
 
 try {
-    // ── Connexion SANS sélectionner de base ──
-    $dsn = sprintf('mysql:host=%s;port=%d;charset=%s', DB_HOST, DB_PORT, DB_CHARSET);
-    $pdo = new PDO($dsn, DB_USER, DB_PASS, [
+    $pdo = new PDO('sqlite:' . DB_PATH, null, null, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
     ]);
-
-    // ── Création de la base ──
-    $pdo->exec('CREATE DATABASE IF NOT EXISTS `' . DB_NAME . '` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
-    $pdo->exec('USE `' . DB_NAME . '`');
+    $pdo->exec('PRAGMA journal_mode=WAL');
+    $pdo->exec('PRAGMA foreign_keys=ON');
 
     // ── Table species ──
     $pdo->exec('
-        CREATE TABLE IF NOT EXISTS `species` (
-            `key`              VARCHAR(30)    PRIMARY KEY,
-            `name`             VARCHAR(80)    NOT NULL,
-            `latin`            VARCHAR(120)   NOT NULL DEFAULT "",
-            `color`            VARCHAR(10)    NOT NULL DEFAULT "#0ea5e9",
-            `cost_price_default` DECIMAL(8,2) NOT NULL DEFAULT 0,
-            `sale_price_default` DECIMAL(8,2) NOT NULL DEFAULT 0,
-            `growth_a`         DECIMAL(10,2)  NOT NULL DEFAULT 4000,
-            `growth_k`         DECIMAL(10,6)  NOT NULL DEFAULT 0.004,
-            `cost_high`        DECIMAL(8,2)   NOT NULL DEFAULT 14,
-            `cost_min`         DECIMAL(8,2)   NOT NULL DEFAULT 6,
-            `cost_mature`      DECIMAL(8,2)   NOT NULL DEFAULT 7.5,
-            `optimal_weight`   INT UNSIGNED   NOT NULL DEFAULT 300,
-            `sort_order`       INT UNSIGNED   NOT NULL DEFAULT 0,
-            `created_at`       TIMESTAMP      DEFAULT CURRENT_TIMESTAMP,
-            `updated_at`       TIMESTAMP      DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        CREATE TABLE IF NOT EXISTS species (
+            key              TEXT PRIMARY KEY,
+            name             TEXT NOT NULL,
+            latin            TEXT NOT NULL DEFAULT "",
+            color            TEXT NOT NULL DEFAULT "#0ea5e9",
+            cost_price_default REAL NOT NULL DEFAULT 0,
+            sale_price_default REAL NOT NULL DEFAULT 0,
+            growth_a         REAL NOT NULL DEFAULT 4000,
+            growth_k         REAL NOT NULL DEFAULT 0.004,
+            cost_high        REAL NOT NULL DEFAULT 14,
+            cost_min         REAL NOT NULL DEFAULT 6,
+            cost_mature      REAL NOT NULL DEFAULT 7.5,
+            optimal_weight   INTEGER NOT NULL DEFAULT 300,
+            sort_order       INTEGER NOT NULL DEFAULT 0,
+            created_at       TEXT DEFAULT (datetime("now")),
+            updated_at       TEXT DEFAULT (datetime("now"))
+        )
     ');
 
     // ── Table calibres ──
     $pdo->exec('
-        CREATE TABLE IF NOT EXISTS `calibres` (
-            `id`          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            `key`         VARCHAR(30)    NOT NULL UNIQUE,
-            `label`       VARCHAR(80)    NOT NULL,
-            `type`        ENUM("entier","filet") NOT NULL DEFAULT "entier",
-            `min`         INT UNSIGNED   NOT NULL DEFAULT 0,
-            `max`         INT UNSIGNED   NOT NULL DEFAULT 500,
-            `target_min`  INT UNSIGNED   NOT NULL DEFAULT 0,
-            `target_max`  INT UNSIGNED   NOT NULL DEFAULT 500,
-            `species`     JSON           NULL,
-            `sort_order`  INT UNSIGNED   NOT NULL DEFAULT 0,
-            `created_at`  TIMESTAMP      DEFAULT CURRENT_TIMESTAMP,
-            `updated_at`  TIMESTAMP      DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        CREATE TABLE IF NOT EXISTS calibres (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            key         TEXT NOT NULL UNIQUE,
+            label       TEXT NOT NULL,
+            type        TEXT NOT NULL DEFAULT "entier" CHECK(type IN ("entier","filet")),
+            min         INTEGER NOT NULL DEFAULT 0,
+            max         INTEGER NOT NULL DEFAULT 500,
+            target_min  INTEGER NOT NULL DEFAULT 0,
+            target_max  INTEGER NOT NULL DEFAULT 500,
+            species     TEXT,
+            sort_order  INTEGER NOT NULL DEFAULT 0,
+            created_at  TEXT DEFAULT (datetime("now")),
+            updated_at  TEXT DEFAULT (datetime("now"))
+        )
     ');
 
     // ── Table lots ──
     $pdo->exec('
-        CREATE TABLE IF NOT EXISTS `lots` (
-            `id`             INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            `name`           VARCHAR(50)    NOT NULL,
-            `species_key`    VARCHAR(30)    NOT NULL,
-            `calibre_key`    VARCHAR(30)    NOT NULL,
-            `quantity`       DECIMAL(10,2)  NOT NULL DEFAULT 0,
-            `current_weight` DECIMAL(10,2)  NOT NULL DEFAULT 0,
-            `cost_price`     DECIMAL(8,2)   NOT NULL DEFAULT 0,
-            `sale_price`     DECIMAL(8,2)   NOT NULL DEFAULT 0,
-            `to_remove`      TINYINT(1)     NOT NULL DEFAULT 0,
-            `created_at`     TIMESTAMP      DEFAULT CURRENT_TIMESTAMP,
-            `updated_at`     TIMESTAMP      DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        CREATE TABLE IF NOT EXISTS lots (
+            id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            name           TEXT NOT NULL,
+            species_key    TEXT NOT NULL,
+            calibre_key    TEXT NOT NULL,
+            quantity       REAL NOT NULL DEFAULT 0,
+            current_weight REAL NOT NULL DEFAULT 0,
+            cost_price     REAL NOT NULL DEFAULT 0,
+            sale_price     REAL NOT NULL DEFAULT 0,
+            to_remove      INTEGER NOT NULL DEFAULT 0,
+            created_at     TEXT DEFAULT (datetime("now")),
+            updated_at     TEXT DEFAULT (datetime("now"))
+        )
     ');
 
     // ── Données de démonstration ──
     $messages = [];
 
     // -- Species --
-    $spCount = (int) $pdo->query('SELECT COUNT(*) FROM `species`')->fetchColumn();
+    $spCount = (int) $pdo->query('SELECT COUNT(*) FROM species')->fetchColumn();
     if ($spCount === 0) {
         $speciesData = [
             ['truite-arc',      'Truite Arc-en-ciel', 'Oncorhynchus mykiss',    '#0ea5e9',  7.80,  9.50, 4200, 0.0045, 14.0,  6.2,  7.5,  300, 0],
@@ -94,7 +90,7 @@ try {
             ['lavaret',         'Lavaret',             'Coregonus lavaretus',    '#6366f1',  9.30, 11.00, 1600, 0.0028, 15.0,  7.8,  9.2,  300, 4],
         ];
         $stmt = $pdo->prepare('
-            INSERT INTO `species` (`key`, `name`, `latin`, `color`, `cost_price_default`, `sale_price_default`, `growth_a`, `growth_k`, `cost_high`, `cost_min`, `cost_mature`, `optimal_weight`, `sort_order`)
+            INSERT INTO species (key, name, latin, color, cost_price_default, sale_price_default, growth_a, growth_k, cost_high, cost_min, cost_mature, optimal_weight, sort_order)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ');
         foreach ($speciesData as $row) {
@@ -104,7 +100,7 @@ try {
     }
 
     // -- Calibres --
-    $calCount = (int) $pdo->query('SELECT COUNT(*) FROM `calibres`')->fetchColumn();
+    $calCount = (int) $pdo->query('SELECT COUNT(*) FROM calibres')->fetchColumn();
     if ($calCount === 0) {
         $calibresData = [
             ['e200400',   'Entier 200/400',   'entier', 200,  400,  200,  400,  '["truite-arc","truite-fario","saumon-fontaine","lavaret"]', 0],
@@ -116,7 +112,7 @@ try {
             ['f400600',   'Filet 400/600',    'filet',  400,  600,  400,  600,  '["truite-arc","saumon-fontaine","omble"]', 6],
         ];
         $stmt = $pdo->prepare('
-            INSERT INTO `calibres` (`key`, `label`, `type`, `min`, `max`, `target_min`, `target_max`, `species`, `sort_order`)
+            INSERT INTO calibres (key, label, type, min, max, target_min, target_max, species, sort_order)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ');
         foreach ($calibresData as $row) {
@@ -126,7 +122,7 @@ try {
     }
 
     // -- Lots --
-    $lotCount = (int) $pdo->query('SELECT COUNT(*) FROM `lots`')->fetchColumn();
+    $lotCount = (int) $pdo->query('SELECT COUNT(*) FROM lots')->fetchColumn();
     if ($lotCount === 0) {
         $demo = [
             // Truite Arc-en-ciel
@@ -184,7 +180,7 @@ try {
         ];
 
         $stmt = $pdo->prepare('
-            INSERT INTO `lots` (`name`, `species_key`, `calibre_key`, `quantity`, `current_weight`, `cost_price`, `sale_price`)
+            INSERT INTO lots (name, species_key, calibre_key, quantity, current_weight, cost_price, sale_price)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         ');
 
@@ -206,7 +202,7 @@ try {
         ]);
     }
 
-} catch (PDOException $e) {
+} catch (Exception $e) {
     http_response_code(500);
     echo json_encode([
         'success' => false,
