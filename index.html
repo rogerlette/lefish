@@ -200,6 +200,38 @@
 </div>
 
 <!-- ================================================================
+     ÉCRAN D'ERREUR
+     ================================================================ -->
+<div id="errorScreen" class="error-screen" style="display:none">
+  <div class="error-card">
+    <svg class="error-fish" viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="55" cy="40" rx="40" ry="25" fill="#e2e8f0" stroke="#94a3b8" stroke-width="2"/>
+      <polygon points="95,40 115,22 115,58" fill="#e2e8f0" stroke="#94a3b8" stroke-width="2"/>
+      <circle cx="40" cy="35" r="4" fill="#94a3b8"/>
+      <path d="M35 50 Q45 55 55 50" stroke="#94a3b8" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <line x1="20" y1="30" x2="5" y2="25" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="20" y1="40" x2="3" y2="40" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="20" y1="50" x2="5" y2="55" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    <h1 class="error-title">AquaStock</h1>
+    <p class="error-message" id="errorMessage">Impossible de se connecter au serveur.</p>
+    <p class="error-detail" id="errorDetail">La base de données est temporairement inaccessible. Veuillez réessayer dans quelques instants.</p>
+    <div class="error-actions">
+      <button class="error-btn error-btn-primary" onclick="location.reload()">Réessayer</button>
+      <button class="error-btn error-btn-secondary" onclick="startDemoMode()">Mode démonstration</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================
+     BANDEAU MODE DÉMO
+     ================================================================ -->
+<div id="demoBanner" class="demo-banner" style="display:none">
+  <span>Mode démonstration — les données ne sont pas sauvegardées</span>
+  <button onclick="location.reload()" class="demo-retry-btn">Reconnecter</button>
+</div>
+
+<!-- ================================================================
      SCRIPTS — ordre de chargement important
      ================================================================ -->
 <script src="js/logo.js"></script>
