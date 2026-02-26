@@ -65,28 +65,120 @@ const DEMO_LOTS = [
 // ── Flag : connecté à MySQL ou non ──
 let dbConnected = false;
 
+// ── Affichage de l'écran d'erreur ──
+function showErrorScreen(message, detail) {
+  const screen = document.getElementById('errorScreen');
+  if (!screen) return;
+  if (message) document.getElementById('errorMessage').textContent = message;
+  if (detail)  document.getElementById('errorDetail').textContent = detail;
+  screen.style.display = 'flex';
+  // Masquer le contenu principal
+  document.querySelector('header').style.display = 'none';
+  document.getElementById('summaryBar').style.display = 'none';
+  document.querySelector('main').style.display = 'none';
+}
+
+function hideErrorScreen() {
+  const screen = document.getElementById('errorScreen');
+  if (screen) screen.style.display = 'none';
+  document.querySelector('header').style.display = '';
+  document.getElementById('summaryBar').style.display = '';
+  document.querySelector('main').style.display = '';
+}
+
+// ── Initialisation de la base depuis l'écran d'erreur ──
+async function initDatabase(btn) {
+  const status = document.getElementById('initStatus');
+  btn.disabled = true;
+  btn.textContent = 'Initialisation...';
+  status.textContent = '';
+  status.className = 'error-init-status';
+
+  try {
+    const resp = await fetch('api/init.php');
+    const contentType = resp.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      throw new Error('Le serveur ne retourne pas du JSON. Vérifiez que PHP est actif sur votre hébergement.');
+    }
+    const result = await resp.json();
+    if (result.success) {
+      status.textContent = result.message;
+      status.classList.add('success');
+      setTimeout(() => location.reload(), 1500);
+    } else {
+      throw new Error(result.error || 'Erreur inconnue');
+    }
+  } catch (e) {
+    status.textContent = e.message;
+    status.classList.add('error');
+    btn.disabled = false;
+    btn.textContent = 'Initialiser la base';
+  }
+}
+
+// ── Lancement du mode démo depuis l'écran d'erreur ──
+function startDemoMode() {
+  hideErrorScreen();
+  lots = DEMO_LOTS.map(l => ({ ...l, id: nextId++ }));
+  dbConnected = false;
+  document.getElementById('demoBanner').style.display = 'flex';
+  render();
+}
+
 // ── Chargement des lots depuis l'API ──
 async function loadLotsFromDb() {
   try {
     const resp = await fetch(API_BASE);
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+
+    // Vérifier si la réponse est du JSON (et pas une page HTML "en construction")
+    const contentType = resp.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      throw new Error('Le serveur ne retourne pas du JSON (réponse : ' + contentType.split(';')[0] + ')');
+    }
+
+    if (!resp.ok) {
+      const body = await resp.json().catch(() => ({}));
+      throw new Error(body.error || 'Erreur serveur HTTP ' + resp.status);
+    }
+
     const data = await resp.json();
     if (Array.isArray(data) && data.length > 0) {
       lots = data;
       nextId = Math.max(...lots.map(l => l.id)) + 1;
       dbConnected = true;
       console.log('AquaStock : ' + lots.length + ' lots chargés depuis MySQL');
+      hideErrorScreen();
       render();
       return;
     }
+
+    // Tableau vide = base pas encore initialisée
+    if (Array.isArray(data) && data.length === 0) {
+      showErrorScreen(
+        'Base de données vide',
+        'La table lots est vide. Initialisez la base en appelant api/init.php depuis votre navigateur.'
+      );
+      return;
+    }
+
   } catch (e) {
-    console.warn('AquaStock : API MySQL indisponible, utilisation des données locales.', e.message);
+    console.warn('AquaStock : API MySQL indisponible.', e.message);
+
+    let detail = 'Veuillez vérifier la connexion au serveur MySQL et réessayer.';
+    if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
+      detail = 'Le serveur est injoignable. Vérifiez que les fichiers PHP sont bien déployés sur votre hébergement.';
+    } else if (e.message.includes('JSON')) {
+      detail = 'Le serveur retourne une page HTML au lieu de données JSON. Vérifiez que PHP est actif et que les fichiers api/ sont bien en place.';
+    } else if (e.message) {
+      detail = e.message;
+    }
+
+    showErrorScreen('Impossible de se connecter', detail);
+    return;
   }
 
-  // Fallback : données de démonstration
-  lots = DEMO_LOTS.map(l => ({ ...l, id: nextId++ }));
-  dbConnected = false;
-  render();
+  // Fallback imprévu
+  showErrorScreen('Erreur inattendue', 'La réponse du serveur est dans un format inconnu.');
 }
 
 // ── Sauvegarde d'un lot (POST = nouveau, PUT = existant) ──

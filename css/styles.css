@@ -817,3 +817,148 @@ main { padding: 24px 32px; max-width: 1400px; margin: 0 auto; }
   .date-display { min-width: 90px; font-size: 10px; }
   .nav-btn { width: 34px; height: 34px; }
 }
+
+/* ================================================================
+   ÉCRAN D'ERREUR
+   ================================================================ */
+.error-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Inter', sans-serif;
+}
+
+.error-card {
+  text-align: center;
+  max-width: 420px;
+  padding: 48px 32px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+}
+
+.error-fish {
+  width: 100px;
+  height: 68px;
+  margin-bottom: 20px;
+  opacity: 0.7;
+}
+
+.error-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 16px 0;
+}
+
+.error-message {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+  margin: 0 0 8px 0;
+}
+
+.error-detail {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0 0 28px 0;
+  line-height: 1.5;
+}
+
+.error-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.error-btn {
+  padding: 10px 22px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.15s;
+}
+
+.error-btn:hover { opacity: 0.85; }
+
+.error-btn-primary {
+  background: #2563eb;
+  color: white;
+}
+
+.error-btn-init {
+  background: #16a34a;
+  color: white;
+}
+
+.error-btn-init:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.error-btn-secondary {
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.error-init-status {
+  font-size: 12px;
+  margin: 14px 0 0 0;
+  min-height: 18px;
+  line-height: 1.4;
+}
+
+.error-init-status.success { color: #16a34a; }
+.error-init-status.error   { color: #dc2626; }
+
+/* ================================================================
+   BANDEAU MODE DÉMO
+   ================================================================ */
+.demo-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border-top: 1px solid #fde68a;
+}
+
+body.dark .demo-banner {
+  background: #451a03;
+  color: #fbbf24;
+  border-top-color: #78350f;
+}
+
+.demo-retry-btn {
+  background: #f59e0b;
+  color: white;
+  border: none;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+}
+
+.demo-retry-btn:hover { opacity: 0.85; }
