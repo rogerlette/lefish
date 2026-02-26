@@ -218,8 +218,10 @@
     <p class="error-detail" id="errorDetail">La base de données est temporairement inaccessible. Veuillez réessayer dans quelques instants.</p>
     <div class="error-actions">
       <button class="error-btn error-btn-primary" onclick="location.reload()">Réessayer</button>
+      <button class="error-btn error-btn-init" onclick="initDatabase(this)">Initialiser la base</button>
       <button class="error-btn error-btn-secondary" onclick="startDemoMode()">Mode démonstration</button>
     </div>
+    <p class="error-init-status" id="initStatus"></p>
   </div>
 </div>
 

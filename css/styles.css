@@ -874,6 +874,7 @@ main { padding: 24px 32px; max-width: 1400px; margin: 0 auto; }
   display: flex;
   gap: 10px;
   justify-content: center;
+  flex-wrap: wrap;
 }
 
 .error-btn {
@@ -894,11 +895,31 @@ main { padding: 24px 32px; max-width: 1400px; margin: 0 auto; }
   color: white;
 }
 
+.error-btn-init {
+  background: #16a34a;
+  color: white;
+}
+
+.error-btn-init:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
 .error-btn-secondary {
   background: var(--card);
   color: var(--text);
   border: 1px solid var(--border);
 }
+
+.error-init-status {
+  font-size: 12px;
+  margin: 14px 0 0 0;
+  min-height: 18px;
+  line-height: 1.4;
+}
+
+.error-init-status.success { color: #16a34a; }
+.error-init-status.error   { color: #dc2626; }
 
 /* ================================================================
    BANDEAU MODE DÉMO

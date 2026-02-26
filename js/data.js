@@ -86,6 +86,36 @@ function hideErrorScreen() {
   document.querySelector('main').style.display = '';
 }
 
+// ── Initialisation de la base depuis l'écran d'erreur ──
+async function initDatabase(btn) {
+  const status = document.getElementById('initStatus');
+  btn.disabled = true;
+  btn.textContent = 'Initialisation...';
+  status.textContent = '';
+  status.className = 'error-init-status';
+
+  try {
+    const resp = await fetch('api/init.php');
+    const contentType = resp.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      throw new Error('Le serveur ne retourne pas du JSON. Vérifiez que PHP est actif sur votre hébergement.');
+    }
+    const result = await resp.json();
+    if (result.success) {
+      status.textContent = result.message;
+      status.classList.add('success');
+      setTimeout(() => location.reload(), 1500);
+    } else {
+      throw new Error(result.error || 'Erreur inconnue');
+    }
+  } catch (e) {
+    status.textContent = e.message;
+    status.classList.add('error');
+    btn.disabled = false;
+    btn.textContent = 'Initialiser la base';
+  }
+}
+
 // ── Lancement du mode démo depuis l'écran d'erreur ──
 function startDemoMode() {
   hideErrorScreen();
