@@ -36,8 +36,8 @@ try {
             cost_mature      REAL NOT NULL DEFAULT 7.5,
             optimal_weight   INTEGER NOT NULL DEFAULT 300,
             sort_order       INTEGER NOT NULL DEFAULT 0,
-            created_at       TEXT DEFAULT (datetime("now")),
-            updated_at       TEXT DEFAULT (datetime("now"))
+            created_at       TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at       TEXT DEFAULT CURRENT_TIMESTAMP
         )
     ');
 
@@ -54,8 +54,8 @@ try {
             target_max  INTEGER NOT NULL DEFAULT 500,
             species     TEXT,
             sort_order  INTEGER NOT NULL DEFAULT 0,
-            created_at  TEXT DEFAULT (datetime("now")),
-            updated_at  TEXT DEFAULT (datetime("now"))
+            created_at  TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at  TEXT DEFAULT CURRENT_TIMESTAMP
         )
     ');
 
@@ -71,8 +71,8 @@ try {
             cost_price     REAL NOT NULL DEFAULT 0,
             sale_price     REAL NOT NULL DEFAULT 0,
             to_remove      INTEGER NOT NULL DEFAULT 0,
-            created_at     TEXT DEFAULT (datetime("now")),
-            updated_at     TEXT DEFAULT (datetime("now"))
+            created_at     TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at     TEXT DEFAULT CURRENT_TIMESTAMP
         )
     ');
 
