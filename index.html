@@ -232,6 +232,7 @@
     const lot = lots.find(l => l.id === id);
     if (!lot) return;
     lot.toRemove = !lot.toRemove;
+    updateLotInDb(lot);
     render();
   }, true);
 
