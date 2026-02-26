@@ -46,6 +46,7 @@ function shiftDays(n) {
   currentDate.setDate(currentDate.getDate() + n);
   updateDateDisplay();
   render();
+  bulkUpdateDb();
 }
 
 // ---- Dark mode ----

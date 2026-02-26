@@ -133,12 +133,14 @@ function confirmAdd() {
   }
   if (qty <= 0 || weight <= 0) { alert('Les valeurs numériques doivent être positives.'); return; }
   if (sale <= cost) { alert('Le prix de vente doit être supérieur au prix de revient.'); return; }
-  lots.push({
+  const newLot = {
     id: nextId++, name,
     speciesKey: modalSpeciesKey, calibreKey: modalCalibreKey,
     quantity: qty, currentWeight: weight,
     targetWeight: target, costPrice: cost, salePrice: sale,
-  });
+  };
+  lots.push(newLot);
+  saveLotToDb(newLot);
   collapsedSpecies[modalSpeciesKey] = false;
   closeModal();
   render();
