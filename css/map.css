@@ -1,0 +1,402 @@
+/* ================================================================
+   AquaStock — Carte des bassins
+   ================================================================ */
+
+/* ---- VARIABLES ---- */
+:root {
+  --bg: #f5f4f0;
+  --surface: #ffffff;
+  --card: #fafaf8;
+  --border: #e4e2dc;
+  --border-strong: #ccc9c0;
+  --text: #1a1916;
+  --muted: #7a7770;
+  --muted-light: #b5b2aa;
+  --water: #dbeafe;
+  --water-deep: #93c5fd;
+  --water-flow: #60a5fa;
+  --pond-border: #3b82f6;
+  --pond-wall: #1e3a5f;
+}
+
+body.dark {
+  --bg: #141412;
+  --surface: #1e1d1a;
+  --card: #242320;
+  --border: #2e2d28;
+  --border-strong: #3d3c36;
+  --text: #edecea;
+  --muted: #7a7770;
+  --muted-light: #4a4944;
+  --water: #1e2a3a;
+  --water-deep: #1e3a5f;
+  --water-flow: #3b82f6;
+  --pond-border: #60a5fa;
+  --pond-wall: #93c5fd;
+}
+
+/* ---- RESET ---- */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  height: 100vh;
+  overflow: hidden;
+  font-size: 14px;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* ---- HEADER ---- */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+}
+
+.map-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.map-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.back-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+.back-btn:hover {
+  background: var(--border);
+  color: var(--text);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: -0.3px;
+}
+.logo-badge {
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Zoom controls */
+.zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 2px;
+}
+
+.zoom-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s;
+  font-family: 'Inter', sans-serif;
+}
+.zoom-btn:hover {
+  background: var(--surface);
+}
+.zoom-btn:active {
+  background: var(--border);
+}
+
+#resetBtn {
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  font-size: 18px;
+}
+
+.zoom-level {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  padding: 0 6px;
+  min-width: 42px;
+  text-align: center;
+}
+
+/* ---- MAP CONTAINER ---- */
+.map-container {
+  position: fixed;
+  top: 52px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  background: var(--bg);
+  cursor: grab;
+}
+.map-container:active {
+  cursor: grabbing;
+}
+
+#mapCanvas {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* ---- LOT PANEL (slide-up sheet) ---- */
+.lot-panel {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 300;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.1);
+  padding: 0 20px 20px;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.lot-panel.active {
+  transform: translateY(0);
+}
+
+.lot-panel-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border-strong);
+  margin: 10px auto 14px;
+}
+
+.lot-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.lot-panel-code {
+  font-size: 18px;
+  font-weight: 700;
+  font-family: 'DM Mono', monospace;
+}
+
+.lot-panel-subtitle {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.lot-panel-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.lot-panel-close:hover {
+  background: var(--border);
+}
+
+.lot-panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lot-panel-empty {
+  font-size: 13px;
+  color: var(--muted-light);
+  font-style: italic;
+  padding: 8px 0;
+}
+
+.lot-panel-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--card);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.lot-panel-label {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.lot-panel-value {
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.lot-panel-actions {
+  margin-top: 14px;
+}
+
+.btn-panel-link {
+  display: block;
+  text-align: center;
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--text);
+  color: var(--bg);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 13px;
+  transition: opacity 0.15s;
+}
+.btn-panel-link:hover {
+  opacity: 0.85;
+}
+
+/* ---- MINIMAP ---- */
+.minimap-wrap {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 250;
+  border: 2px solid var(--border-strong);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+  opacity: 0.9;
+  transition: opacity 0.2s;
+}
+.minimap-wrap:hover {
+  opacity: 1;
+}
+
+.lot-panel.active ~ .minimap-wrap {
+  bottom: calc(60vh + 16px);
+  transition: bottom 0.3s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.2s;
+}
+
+#minimapCanvas {
+  display: block;
+}
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 480px) {
+  header {
+    height: 48px;
+    padding: 0 10px;
+  }
+
+  .logo {
+    font-size: 13px;
+    gap: 6px;
+  }
+  .logo-badge {
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  .back-btn {
+    width: 30px;
+    height: 30px;
+  }
+
+  .zoom-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+
+  .zoom-level {
+    font-size: 10px;
+    min-width: 36px;
+  }
+
+  #resetBtn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .map-container {
+    top: 48px;
+  }
+
+  .lot-panel {
+    max-height: 70vh;
+    padding: 0 16px 16px;
+  }
+
+  .minimap-wrap {
+    bottom: 10px;
+    right: 10px;
+  }
+
+  #minimapCanvas {
+    width: 120px;
+    height: 75px;
+  }
+}
+
+@media (max-width: 360px) {
+  .logo span:not(.logo-badge) {
+    font-size: 12px;
+  }
+  .zoom-controls {
+    padding: 1px;
+  }
+  .zoom-level {
+    display: none;
+  }
+}
