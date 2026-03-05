@@ -107,6 +107,8 @@ header {
 .btn-sim:hover { background: var(--border); }
 .btn-add { background: var(--text); color: white; }
 .btn-add:hover { background: #333; }
+.btn-red { background: #dc2626; color: white; }
+.btn-red:hover { background: #b91c1c; }
 
 /* ---- SUMMARY BAR ---- */
 .summary-bar {
