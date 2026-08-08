@@ -9,19 +9,26 @@ base SQLite — aucun serveur de base de données à installer. Elle tourne sur
 n'importe quel hébergement mutualisé (OVH, o2switch, Ionos…), et sait aussi
 parler à MySQL si l'hébergeur l'impose.
 
-## Deux versions
+## État du projet
 
-| | `autonome/index.html` | Version complète (ce dossier) |
+**La version en ligne est la seule maintenue.** C'est le fichier
+`autonome/index.html` : une application complète dans un seul fichier, publiée
+telle quelle, qui garde ses données dans le navigateur de l'appareil.
+
+La version serveur (PHP + SQLite, le reste de ce dossier) reste disponible et
+fonctionnelle — elle apporte l'envoi automatique des e-mails et le partage des
+données entre appareils — mais elle **n'est plus mise à jour**. Les sections 3
+à 7 de ce document la concernent ; elles restent valables en l'état.
+
+| | `autonome/index.html` (maintenu) | Version serveur (gelée) |
 | --- | --- | --- |
 | Mise en route | aucune — le fichier suffit | déposer les fichiers + régler le CRON |
-| Données | dans le navigateur de l'appareil | base SQLite (ou MySQL), partagée entre appareils |
+| Données | dans le navigateur de l'appareil | base SQLite, partagée entre appareils |
 | Rappels clients | message pré-rédigé, ouvert dans Mail ou SMS | e-mails envoyés automatiquement |
-| Sauvegarde | export/import d'un fichier JSON | sauvegarde de l'hébergeur |
+| Sauvegarde | export/import d'un fichier JSON | copie du fichier `.sqlite` |
 
-Les deux appliquent exactement les mêmes règles métier (numérotation des
-séances, séances bilan, soldes, alertes). `autonome/index.html` est un fichier
-unique : il s'ouvre depuis n'importe où — un hébergement statique, une clé USB,
-ou directement le fichier — et fonctionne sans réseau.
+Les deux appliquent les mêmes règles métier (numérotation des séances, séances
+bilan, soldes, alertes).
 
 ---
 
