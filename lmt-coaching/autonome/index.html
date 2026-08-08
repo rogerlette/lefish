@@ -1,0 +1,2032 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LMT Coaching</title>
+</head>
+<body>
+<!-- ================================================================
+     LMT Coaching — version autonome, sans serveur.
+     Tout tient dans ce fichier : les données sont enregistrées dans le
+     navigateur de l'appareil. Aucune connexion réseau n'est utilisée.
+     ================================================================ -->
+
+<style>
+/* ---- JETONS DE COULEUR ---------------------------------------- */
+:root {
+  color-scheme: light dark;
+
+  --bg: #f4f3f0;
+  --surface: #ffffff;
+  --card: #faf9f7;
+  --border: #e5e3dd;
+  --border-strong: #cbc8bf;
+  --text: #191813;
+  --muted: #77746b;
+  --accent: #e2551f;
+  --accent-ink: #ffffff;
+  --accent-soft: #fdeee7;
+  --accent-text: #b73f11;
+
+  --planned: #2563eb;   --planned-bg: #ecf3ff;
+  --done: #15803d;      --done-bg: #ecfaf0;
+  --cancel: #79766e;    --cancel-bg: #f1f0ed;
+  --late: #b45309;      --late-bg: #fdf4e3;
+  --absent: #c2331f;    --absent-bg: #fdeeeb;
+  --special: #6d28d9;   --special-bg: #f3efff;
+
+  --radius: 14px;
+  --radius-sm: 9px;
+  --shadow: 0 1px 2px rgba(25,24,19,.05), 0 6px 18px rgba(25,24,19,.05);
+  --tabbar: 62px;
+
+  --ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+}
+
+/* Thème sombre : suit le réglage du téléphone, sauf choix explicite clair. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131318;
+    --surface: #1c1d23;
+    --card: #22242b;
+    --border: #2e3038;
+    --border-strong: #40434d;
+    --text: #eceef2;
+    --muted: #8e9099;
+    --accent: #ff7f4d;
+    --accent-ink: #1a1005;
+    --accent-soft: #2d1a10;
+    --accent-text: #ff9a70;
+
+    --planned: #7cb0ff;   --planned-bg: #17253c;
+    --done: #5fd18a;      --done-bg: #12291c;
+    --cancel: #9b9ea8;    --cancel-bg: #26282f;
+    --late: #f5b544;      --late-bg: #2d2413;
+    --absent: #ff8072;    --absent-bg: #2f1917;
+    --special: #b295fb;   --special-bg: #241c3a;
+
+    --shadow: 0 1px 2px rgba(0,0,0,.45);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #131318;
+  --surface: #1c1d23;
+  --card: #22242b;
+  --border: #2e3038;
+  --border-strong: #40434d;
+  --text: #eceef2;
+  --muted: #8e9099;
+  --accent: #ff7f4d;
+  --accent-ink: #1a1005;
+  --accent-soft: #2d1a10;
+  --accent-text: #ff9a70;
+
+  --planned: #7cb0ff;   --planned-bg: #17253c;
+  --done: #5fd18a;      --done-bg: #12291c;
+  --cancel: #9b9ea8;    --cancel-bg: #26282f;
+  --late: #f5b544;      --late-bg: #2d2413;
+  --absent: #ff8072;    --absent-bg: #2f1917;
+  --special: #b295fb;   --special-bg: #241c3a;
+
+  --shadow: 0 1px 2px rgba(0,0,0,.45);
+}
+
+/* ---- BASE ------------------------------------------------------ */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--ui);
+  font-size: 15px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 { margin: 0; line-height: 1.2; text-wrap: balance; }
+h1 { font-size: 20px; letter-spacing: -.01em; }
+h2 { font-size: 16px; }
+p { margin: 0; }
+
+a { color: inherit; text-decoration: none; }
+.hidden { display: none !important; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.mono { font-family: var(--mono); }
+.num { font-variant-numeric: tabular-nums; }
+.row { display: flex; align-items: center; gap: 8px; }
+.wrap { flex-wrap: wrap; }
+.grow { flex: 1; min-width: 0; }
+.right { margin-left: auto; }
+.stack { display: flex; flex-direction: column; gap: 10px; }
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.eyebrow {
+  font-size: 11px; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--muted); font-weight: 600;
+}
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+
+/* ---- CONTRÔLES -------------------------------------------------- */
+button, .btn {
+  font: inherit;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 9px 14px; min-height: 42px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface); color: var(--text);
+  cursor: pointer;
+}
+button:hover, .btn:hover { border-color: var(--muted); }
+button:active, .btn:active { transform: scale(.99); }
+button.primary, .btn.primary {
+  background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600;
+}
+button.ghost { background: transparent; border-color: transparent; color: var(--muted); }
+button.danger { color: var(--absent); border-color: var(--absent); background: transparent; }
+button.block, .btn.block { width: 100%; }
+button.sm, .btn.sm { min-height: 34px; padding: 4px 11px; font-size: 13px; }
+button[disabled] { opacity: .45; pointer-events: none; }
+
+.iconbtn { width: 38px; min-height: 38px; padding: 0; border: none; background: transparent; color: var(--muted); font-size: 18px; }
+
+input, select, textarea {
+  font: inherit; width: 100%;
+  padding: 10px 12px; min-height: 44px;
+  border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  background: var(--surface); color: var(--text);
+}
+textarea { min-height: 84px; resize: vertical; line-height: 1.5; }
+label { display: block; margin: 12px 0 5px; font-size: 12px; letter-spacing: .04em;
+        text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.pair { display: flex; gap: 10px; }
+.pair > * { flex: 1; min-width: 0; }
+.check { display: flex; align-items: flex-start; gap: 9px; margin: 12px 0; }
+.check input { width: 22px; height: 22px; min-height: 22px; flex: none; accent-color: var(--accent); }
+.check label { margin: 0; font-size: 14px; text-transform: none; letter-spacing: 0;
+               color: var(--text); font-weight: 400; }
+
+/* ---- CHARPENTE -------------------------------------------------- */
+.topbar {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: 10px;
+  padding: max(10px, env(safe-area-inset-top)) 14px 10px;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+}
+.mark {
+  display: grid; place-items: center; width: 31px; height: 31px; flex: none;
+  border-radius: 9px; background: var(--accent); color: var(--accent-ink);
+  font-size: 10.5px; font-weight: 800; letter-spacing: .5px;
+}
+.app {
+  padding: 14px 12px calc(var(--tabbar) + env(safe-area-inset-bottom) + 20px);
+  max-width: 1080px; margin: 0 auto;
+}
+.banner {
+  margin: 0 12px; padding: 10px 12px; border-radius: var(--radius-sm);
+  background: var(--late-bg); border: 1px solid var(--late); font-size: 13px;
+}
+
+.tabbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+  display: flex; padding-bottom: env(safe-area-inset-bottom);
+  background: var(--surface); border-top: 1px solid var(--border);
+}
+.tab {
+  flex: 1; position: relative; border: none; background: transparent;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  height: var(--tabbar); min-height: 0; padding: 0;
+  font-size: 11px; color: var(--muted);
+}
+.tab svg { width: 20px; height: 20px; }
+.tab[aria-current="page"] { color: var(--accent); font-weight: 600; }
+.tab .count {
+  position: absolute; top: 7px; left: 50%; margin-left: 6px;
+  min-width: 18px; height: 18px; padding: 0 5px;
+  display: grid; place-items: center; border-radius: 9px;
+  background: var(--absent); color: #fff; font-size: 11px; font-weight: 700;
+}
+
+/* ---- BLOCS ------------------------------------------------------ */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px; box-shadow: var(--shadow);
+}
+.cardhead { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+
+.tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.tile { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 13px; }
+.tile b { display: block; font-size: 23px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.tile span { font-size: 12px; color: var(--muted); }
+
+.datebar { display: flex; align-items: center; gap: 6px; }
+.datebar .label { flex: 1; text-align: center; font-weight: 600; }
+.seg { display: inline-flex; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); overflow: hidden; }
+.seg button { border: none; border-radius: 0; min-height: 36px; padding: 4px 13px; font-size: 13px; background: transparent; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+
+/* ---- AGENDA ----------------------------------------------------- */
+.day { margin-bottom: 14px; }
+.dayhead { display: flex; align-items: baseline; gap: 8px; padding: 4px 2px 5px; border-bottom: 1px solid var(--border); margin-bottom: 7px; }
+.dayhead b { font-size: 15px; text-transform: capitalize; }
+.dayhead span { font-size: 13px; color: var(--muted); }
+.dayhead i { margin-left: auto; font-style: normal; font-size: 12px; color: var(--muted); }
+.day.today .dayhead b { color: var(--accent); }
+.day.free { margin-bottom: 7px; opacity: .8; }
+.day.free .dayhead { margin-bottom: 0; border-bottom-style: dotted; }
+
+.slot {
+  display: flex; gap: 11px; width: 100%; text-align: left;
+  padding: 11px 12px; margin-bottom: 6px; min-height: 0;
+  background: var(--surface); border: 1px solid var(--border);
+  border-left: 4px solid var(--planned); border-radius: var(--radius-sm);
+}
+.slot time { font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums; width: 48px; flex: none; }
+.slot .who { font-weight: 600; }
+.slot .meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); margin-top: 2px; }
+.slot.st-done { border-left-color: var(--done); }
+.slot.st-cancelled { border-left-color: var(--cancel); opacity: .6; }
+.slot.st-cancelled .who { text-decoration: line-through; }
+.slot.st-late_cancel { border-left-color: var(--late); }
+.slot.st-no_show { border-left-color: var(--absent); }
+.slot.milestone { border-left-color: var(--special); background: var(--special-bg); }
+
+/* ---- PASTILLES -------------------------------------------------- */
+.pill {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 1px 8px; border-radius: 999px;
+  font-size: 11px; font-weight: 600; white-space: nowrap;
+}
+.p-planned { color: var(--planned); background: var(--planned-bg); }
+.p-done { color: var(--done); background: var(--done-bg); }
+.p-cancelled { color: var(--cancel); background: var(--cancel-bg); }
+.p-late_cancel { color: var(--late); background: var(--late-bg); }
+.p-no_show { color: var(--absent); background: var(--absent-bg); }
+.p-special { color: var(--special); background: var(--special-bg); }
+.p-health { color: var(--absent); background: var(--absent-bg); }
+.p-flat { color: var(--muted); background: var(--card); }
+.p-accent { color: var(--accent-text); background: var(--accent-soft); }
+
+/* ---- LISTES ----------------------------------------------------- */
+.list { display: flex; flex-direction: column; gap: 8px; }
+.item {
+  display: flex; align-items: center; gap: 11px; width: 100%; text-align: left;
+  padding: 11px 12px; min-height: 0;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+}
+.face {
+  width: 38px; height: 38px; flex: none; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--accent-soft); color: var(--accent-text); font-weight: 700; font-size: 13px;
+}
+.face.warn { background: var(--absent-bg); color: var(--absent); }
+
+/* ---- ALERTES ---------------------------------------------------- */
+.alert {
+  padding: 12px 13px; border-radius: var(--radius-sm);
+  background: var(--surface); border: 1px solid var(--border);
+  border-left: 4px solid var(--muted);
+}
+.alert.high { border-left-color: var(--absent); }
+.alert.medium { border-left-color: var(--late); }
+.alert.low { border-left-color: var(--planned); }
+.alert.done { opacity: .5; }
+.alert b { display: block; margin-bottom: 3px; }
+.alert .acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 11px; }
+
+.notice { border-radius: var(--radius-sm); padding: 11px 13px; font-size: 14px; }
+.notice.health { background: var(--absent-bg); border: 1px solid var(--absent); }
+.notice.health b { color: var(--absent); }
+.notice.special { background: var(--special-bg); border: 1px solid var(--special); }
+.notice p { white-space: pre-wrap; margin-top: 4px; font-size: 13px; }
+
+.bar { height: 9px; border-radius: 5px; background: var(--card); border: 1px solid var(--border); overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--accent); }
+
+.chart { display: flex; align-items: flex-end; gap: 5px; height: 110px; }
+.chart > div { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; height: 100%; }
+.chart i { display: block; width: 100%; background: var(--accent); border-radius: 3px 3px 0 0; min-height: 2px; opacity: .85; }
+.chart small { font-size: 10px; color: var(--muted); }
+
+.empty { text-align: center; color: var(--muted); padding: 32px 16px; font-size: 14px; }
+
+/* ---- FEUILLE ---------------------------------------------------- */
+.backdrop {
+  position: fixed; inset: 0; z-index: 40; background: rgba(15,14,12,.5);
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.sheet {
+  width: 100%; max-width: 560px; max-height: 92vh;
+  display: flex; flex-direction: column;
+  background: var(--bg); border-radius: 20px 20px 0 0;
+  padding-bottom: env(safe-area-inset-bottom);
+  animation: rise .16s ease-out;
+}
+@keyframes rise { from { transform: translateY(20px); } to { transform: none; } }
+.sheet .grip { width: 38px; height: 4px; border-radius: 2px; background: var(--border-strong); margin: 9px auto 2px; }
+.sheet header { display: flex; align-items: center; gap: 8px; padding: 5px 14px 9px; border-bottom: 1px solid var(--border); }
+.sheet header h2 { flex: 1; }
+.sheet .body { padding: 14px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
+.fab {
+  position: fixed; right: 16px; bottom: calc(var(--tabbar) + env(safe-area-inset-bottom) + 16px);
+  z-index: 25; width: 56px; height: 56px; min-height: 0; padding: 0; border-radius: 50%;
+  background: var(--accent); border-color: var(--accent); color: var(--accent-ink);
+  font-size: 27px; box-shadow: 0 6px 20px rgba(226,85,31,.35);
+}
+
+.toast {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(var(--tabbar) + env(safe-area-inset-bottom) + 20px); z-index: 60;
+  max-width: 90vw; padding: 10px 16px; border-radius: 999px;
+  background: var(--text); color: var(--bg); font-size: 13px; font-weight: 500;
+}
+.toast.bad { background: var(--absent); color: #fff; }
+
+/* ---- GRAND ÉCRAN ------------------------------------------------ */
+@media (min-width: 800px) {
+  .tabbar {
+    top: 0; bottom: 0; right: auto; width: 98px; flex-direction: column;
+    justify-content: flex-start; padding-top: 68px;
+    border-top: none; border-right: 1px solid var(--border);
+  }
+  .tab { flex: none; height: 66px; }
+  .tab .count { left: auto; right: 24px; margin: 0; }
+  .topbar { padding-left: 112px; }
+  .app { padding-left: 110px; padding-right: 22px; padding-bottom: 32px; }
+  .banner { margin-left: 110px; }
+  .fab { bottom: 28px; }
+  .toast { bottom: 28px; }
+  .tiles { grid-template-columns: repeat(4, 1fr); }
+  .backdrop { align-items: center; }
+  .sheet { border-radius: var(--radius); max-height: 86vh; }
+  .week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; align-items: start; }
+  .week .day { margin: 0; }
+  .week .slot { flex-direction: column; gap: 2px; padding: 9px; }
+  .week .slot time { width: auto; }
+}
+</style>
+
+<div class="topbar">
+  <span class="mark">LMT</span>
+  <h1 id="pageTitle">Agenda</h1>
+</div>
+
+<div id="banner" class="banner hidden"></div>
+<main class="app" id="screen"></main>
+
+<nav class="tabbar" id="tabbar"></nav>
+
+<div id="backdrop" class="backdrop hidden">
+  <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="grip"></div>
+    <header><h2 id="sheetTitle">Détail</h2><button class="iconbtn" id="sheetX" aria-label="Fermer">✕</button></header>
+    <div class="body" id="sheetBody"></div>
+  </section>
+</div>
+
+<div id="toast" class="toast hidden" role="status"></div>
+
+<script>
+"use strict";
+
+/* ================================================================
+   1. DONNÉES
+   Tout est conservé dans le navigateur de cet appareil.
+   ================================================================ */
+
+const KEY = 'lmt-coaching-v1';
+
+const DEFAULTS = {
+  coachName: 'LMT Coaching',
+  coachEmail: '',
+  coachPhone: '',
+  reminderDays: 2,
+  milestoneInterval: 12,
+  milestoneCallDays: 7,
+  firstContract: 12,
+  paymentBlock: 4,
+  lowBalance: 1,
+  horizonWeeks: 16,
+  defaultDuration: 60,
+  defaultRateCents: 0,
+};
+
+let db = {
+  seq: 1,
+  clients: [],
+  sessions: [],
+  recurrences: [],
+  payments: [],
+  skips: [],        // occurrences supprimées : {recurrenceId, originDate}
+  acks: {},         // alertes traitées : clé -> date
+  reminded: {},     // rappels envoyés : "idSéance|horaire" -> date
+  settings: { ...DEFAULTS },
+};
+
+let storageOk = true;
+
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      db = { ...db, ...parsed, settings: { ...DEFAULTS, ...(parsed.settings || {}) } };
+    }
+  } catch (e) {
+    storageOk = false;
+  }
+}
+
+function save() {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(db));
+  } catch (e) {
+    storageOk = false;
+    showBanner("Ce navigateur n'enregistre rien (mode privé ?). Exportez vos données avant de fermer.");
+  }
+}
+
+function nextId() { return db.seq++; }
+const S = () => db.settings;
+
+/* ================================================================
+   2. OUTILS
+   ================================================================ */
+
+const DAYS = ['', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+const MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+                'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+const STATUS = {
+  planned:     'Prévu',
+  done:        'Effectué',
+  cancelled:   'Annulé (excusé)',
+  late_cancel: 'Annulé tardif',
+  no_show:     'Absent',
+};
+const STATUS_SHORT = { planned: 'Prévu', done: 'Fait', cancelled: 'Annulé', late_cancel: 'Tardif', no_show: 'Absent' };
+const CLIENT_STATUS = { active: 'Actif', paused: 'En pause', archived: 'Archivé' };
+
+/** Statuts qui consomment une séance payée. */
+const CONSUMED = ['done', 'late_cancel', 'no_show'];
+/** Statuts comptés dans la numérotation (l'annulation excusée ne compte pas). */
+const COUNTED = ['planned', 'done', 'late_cancel', 'no_show'];
+
+function esc(v) {
+  if (v === null || v === undefined) return '';
+  return String(v).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+const pad = n => String(n).padStart(2, '0');
+
+function parseDT(s) {
+  if (!s) return null;
+  const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}))?/);
+  return m ? new Date(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0)) : null;
+}
+const dateStr = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+const dtStr = d => dateStr(d) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+const inputVal = s => { const d = parseDT(s); return d ? dateStr(d) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes()) : ''; };
+const addDays = (d, n) => { const c = new Date(d.getTime()); c.setDate(c.getDate() + n); return c; };
+function weekStart(d) { const c = new Date(d.getFullYear(), d.getMonth(), d.getDate()); return addDays(c, -((c.getDay() + 6) % 7)); }
+const isoDay = d => ((d.getDay() + 6) % 7) + 1;
+const sameDay = (a, b) => a && b && dateStr(a) === dateStr(b);
+const isToday = d => sameDay(d, new Date());
+const nowStr = () => dtStr(new Date());
+
+const hhmm = s => { const d = parseDT(s); return d ? pad(d.getHours()) + 'h' + pad(d.getMinutes()) : ''; };
+const shortDate = s => { const d = s instanceof Date ? s : parseDT(s); return d ? pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + '/' + d.getFullYear() : ''; };
+function longDate(s, withYear) {
+  const d = s instanceof Date ? s : parseDT(s);
+  return d ? d.getDate() + ' ' + MONTHS[d.getMonth()] + (withYear ? ' ' + d.getFullYear() : '') : '';
+}
+function fullDT(s) {
+  const d = parseDT(s);
+  return d ? DAYS[isoDay(d)] + ' ' + longDate(d) + ' à ' + hhmm(s) : '';
+}
+function daysUntil(s) {
+  const d = parseDT(s); if (!d) return null;
+  const a = new Date(); a.setHours(0, 0, 0, 0);
+  return Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - a) / 86400000);
+}
+function relDays(s) {
+  const n = daysUntil(s);
+  if (n === null) return '';
+  if (n === 0) return "aujourd'hui";
+  if (n === 1) return 'demain';
+  if (n === -1) return 'hier';
+  return n > 0 ? 'dans ' + n + ' jours' : 'il y a ' + (-n) + ' jours';
+}
+const euros = c => ((c || 0) / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2 }) + ' €';
+const initials = n => (n || '?').trim().split(/\s+/).slice(0, 2).map(p => p[0] || '').join('').toUpperCase();
+const plural = (n, one, many) => n + ' ' + (Math.abs(n) > 1 ? (many || one + 's') : one);
+const fullName = c => (c.firstName + ' ' + (c.lastName || '')).trim();
+
+/* ================================================================
+   3. RÈGLES MÉTIER
+   Rien n'est figé : les numéros de séance, les séances bilan et les
+   alertes sont recalculés à chaque affichage à partir de l'agenda réel.
+   ================================================================ */
+
+const byId = (arr, id) => arr.find(x => x.id === Number(id)) || null;
+const client = id => byId(db.clients, id);
+const clientSessions = id => db.sessions.filter(s => s.clientId === Number(id));
+
+/** Numéro de chaque séance dans le parcours de son client. */
+function ordinals() {
+  const map = {};
+  const per = {};
+  db.sessions
+    .filter(s => COUNTED.includes(s.status))
+    .sort((a, b) => a.startsAt < b.startsAt ? -1 : a.startsAt > b.startsAt ? 1 : a.id - b.id)
+    .forEach(s => {
+      per[s.clientId] = (per[s.clientId] || 0) + 1;
+      map[s.id] = per[s.clientId];
+    });
+  return map;
+}
+
+const milestoneEvery = c => Number(c.milestoneInterval || S().milestoneInterval) || 12;
+const remindDays = c => (c.reminderDays === null || c.reminderDays === undefined || c.reminderDays === '')
+  ? Number(S().reminderDays) : Number(c.reminderDays);
+
+function isMilestone(session, c, ord) {
+  if (session.isSpecial) return true;
+  const n = ord[session.id];
+  return !!n && n % milestoneEvery(c) === 0;
+}
+
+/** Prochaine séance bilan : la prochaine séance à venir dont le n° est multiple de l'intervalle. */
+function nextMilestone(c, ord) {
+  const every = milestoneEvery(c);
+  const now = nowStr();
+  return clientSessions(c.id)
+    .filter(s => s.status === 'planned' && s.startsAt >= now)
+    .sort((a, b) => a.startsAt < b.startsAt ? -1 : 1)
+    .map(s => ({ session: s, ordinal: ord[s.id] }))
+    .find(x => x.ordinal && x.ordinal % every === 0) || null;
+}
+
+function stats(c, ord) {
+  ord = ord || ordinals();
+  const mine = clientSessions(c.id);
+  const now = nowStr();
+  const consumed = mine.filter(s => CONSUMED.includes(s.status)).length;
+  const paid = db.payments.filter(p => p.clientId === c.id).reduce((n, p) => n + Number(p.sessionsCount), 0);
+  const cash = db.payments.filter(p => p.clientId === c.id).reduce((n, p) => n + Number(p.amountCents || 0), 0);
+  const upcoming = mine.filter(s => s.status === 'planned' && s.startsAt >= now)
+                       .sort((a, b) => a.startsAt < b.startsAt ? -1 : 1);
+  const past = mine.filter(s => s.status === 'done').sort((a, b) => a.startsAt > b.startsAt ? -1 : 1);
+  const every = milestoneEvery(c);
+
+  return {
+    done: mine.filter(s => s.status === 'done').length,
+    consumed,
+    paid,
+    balance: paid - consumed,
+    cash,
+    upcoming: upcoming.length,
+    toConfirm: mine.filter(s => s.status === 'planned' && s.startsAt < now).length,
+    next: upcoming[0] || null,
+    last: past[0] || null,
+    every,
+    progress: consumed % every,
+    milestone: nextMilestone(c, ord),
+  };
+}
+
+/**
+ * Crée les cours manquants d'une règle récurrente jusqu'à l'horizon.
+ * Idempotent : une occurrence déjà posée (même déplacée) ou supprimée à la
+ * main n'est jamais recréée.
+ */
+function generate(rec) {
+  if (!rec.active) return 0;
+  const horizonWeeks = Math.max(1, Number(S().horizonWeeks) || 16);
+  let horizon = addDays(new Date(), horizonWeeks * 7);
+  if (rec.untilDate) {
+    const until = parseDT(rec.untilDate);
+    if (until && until < horizon) horizon = until;
+  }
+
+  let cursor = parseDT(rec.anchorDate);
+  if (!cursor) return 0;
+  cursor = addDays(cursor, (Number(rec.weekday) - isoDay(cursor) + 7) % 7);
+
+  const step = Math.max(1, Number(rec.intervalWeeks) || 1) * 7;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  let created = 0, guard = 0;
+
+  while (cursor <= horizon && guard++ < 400) {
+    const day = dateStr(cursor);
+    if (cursor >= today) {
+      const exists = db.sessions.some(s => s.recurrenceId === rec.id && s.originDate === day);
+      const skipped = db.skips.some(k => k.recurrenceId === rec.id && k.originDate === day);
+      if (!exists && !skipped) {
+        db.sessions.push({
+          id: nextId(), clientId: rec.clientId, recurrenceId: rec.id, originDate: day,
+          startsAt: day + ' ' + rec.startTime, duration: Number(rec.duration),
+          location: rec.location || null, status: 'planned', notes: null,
+          isSpecial: false, movedCount: 0, movedAt: null,
+        });
+        created++;
+      }
+    }
+    cursor = addDays(cursor, step);
+  }
+  return created;
+}
+
+function generateAll() {
+  let n = 0;
+  db.recurrences.filter(r => r.active).forEach(r => { n += generate(r); });
+  if (n) save();
+  return n;
+}
+
+/** Toutes les alertes du coach, recalculées depuis l'agenda réel. */
+function alerts(includeDone) {
+  const ord = ordinals();
+  const out = [];
+  const now = new Date();
+  const nowS = nowStr();
+
+  db.clients.filter(c => c.status !== 'archived').forEach(c => {
+    const st = stats(c, ord);
+    const name = fullName(c);
+
+    // 1. Appel à passer avant une séance bilan
+    if (st.milestone) {
+      const when = parseDT(st.milestone.session.startsAt);
+      const callFrom = addDays(when, -Number(S().milestoneCallDays));
+      if (now >= callFrom) {
+        const d = daysUntil(st.milestone.session.startsAt);
+        out.push({
+          key: 'milestone:' + st.milestone.session.id,
+          type: 'call', severity: d <= 2 ? 'high' : 'medium',
+          title: 'Appeler ' + name + ' — mesures cardiaques',
+          text: 'Séance n°' + st.milestone.ordinal + ' (bilan) ' + fullDT(st.milestone.session.startsAt)
+                + ', ' + relDays(st.milestone.session.startsAt)
+                + '. Lui demander de prendre ses mesures de fréquence cardiaque avant la séance.',
+          clientId: c.id, sessionId: st.milestone.session.id, date: st.milestone.session.startsAt,
+        });
+      }
+    }
+
+    // 2. Rappels de cours à envoyer
+    clientSessions(c.id)
+      .filter(s => s.status === 'planned' && s.startsAt >= nowS)
+      .filter(s => daysUntil(s.startsAt) <= remindDays(c))
+      .filter(s => !db.reminded[s.id + '|' + s.startsAt])
+      .forEach(s => {
+        out.push({
+          key: 'remind:' + s.id + '|' + s.startsAt,
+          type: 'remind', severity: 'medium',
+          title: 'Prévenir ' + name + ' de son cours',
+          text: fullDT(s.startsAt) + ', ' + relDays(s.startsAt)
+                + (isMilestone(s, c, ord) ? ' — séance bilan : mesures cardiaques à prendre avant.' : '.'),
+          clientId: c.id, sessionId: s.id, date: s.startsAt,
+        });
+      });
+
+    // 3. Paiement à encaisser
+    if (st.balance <= Number(S().lowBalance) && (st.upcoming > 0 || st.balance < 0)) {
+      out.push({
+        key: 'pay:' + c.id + ':' + st.paid + ':' + st.consumed,
+        type: 'pay', severity: st.balance < 0 ? 'high' : 'medium',
+        title: 'Paiement à encaisser — ' + name,
+        text: st.balance < 0
+          ? Math.abs(st.balance) + ' séance(s) faite(s) au-delà du forfait payé.'
+          : 'Il reste ' + st.balance + ' séance(s) payée(s). Encaisser le prochain bloc de ' + S().paymentBlock + '.',
+        clientId: c.id, sessionId: null, date: st.next ? st.next.startsAt : null,
+      });
+    }
+
+    // 4. Client actif sans cours planifié
+    if (c.status === 'active' && st.upcoming === 0) {
+      out.push({
+        key: 'empty:' + c.id + ':' + (st.last ? st.last.startsAt : 'jamais'),
+        type: 'empty', severity: 'low',
+        title: 'Aucun cours planifié — ' + name,
+        text: st.last ? 'Dernière séance le ' + shortDate(st.last.startsAt) + '. À replanifier ?'
+                      : 'Aucune séance planifiée pour ce client.',
+        clientId: c.id, sessionId: null, date: st.last ? st.last.startsAt : null,
+      });
+    }
+  });
+
+  // 5. Séances passées restées « prévu »
+  db.sessions.filter(s => s.status === 'planned' && s.startsAt < nowS).forEach(s => {
+    const c = client(s.clientId);
+    if (!c) return;
+    out.push({
+      key: 'confirm:' + s.id,
+      type: 'confirm', severity: 'medium',
+      title: 'Séance à pointer — ' + fullName(c),
+      text: 'Le cours du ' + shortDate(s.startsAt) + ' à ' + hhmm(s.startsAt)
+            + ' est toujours « prévu ». Le pointer garde le décompte juste.',
+      clientId: c.id, sessionId: s.id, date: s.startsAt,
+    });
+  });
+
+  const rank = { high: 0, medium: 1, low: 2 };
+  return out
+    .map(a => ({ ...a, done: !!db.acks[a.key] }))
+    .filter(a => includeDone || !a.done)
+    .sort((a, b) => rank[a.severity] - rank[b.severity] || String(a.date || '9') .localeCompare(String(b.date || '9')));
+}
+
+/* ================================================================
+   4. MESSAGES AUX CLIENTS
+   Sans serveur, l'application prépare le message et ouvre l'application
+   Mail ou SMS du téléphone : un appui suffit pour l'envoyer.
+   ================================================================ */
+
+function signature() {
+  const l = ['', '— ' + S().coachName];
+  if (S().coachPhone) l.push(S().coachPhone);
+  if (S().coachEmail) l.push(S().coachEmail);
+  return l.join('\n');
+}
+
+function reminderText(s, c, milestone) {
+  let body = 'Bonjour ' + c.firstName + ',\n\n'
+    + 'Petit rappel de votre séance de coaching :\n'
+    + fullDT(s.startsAt) + ' (' + s.duration + ' min)'
+    + (s.location ? '\nLieu : ' + s.location : '') + '\n';
+  if (milestone) {
+    body += '\nCette séance est une séance de bilan : pensez à prendre vos mesures '
+          + 'de fréquence cardiaque avant de venir, comme convenu.\n';
+  }
+  body += "\nSi vous avez un empêchement, prévenez-moi au plus tôt pour qu'on trouve un autre créneau.\n\n"
+        + 'À très vite !\n' + signature();
+  return { subject: 'Rappel : votre séance ' + fullDT(s.startsAt), body };
+}
+
+function movedText(s, c, oldStart) {
+  return {
+    subject: 'Séance déplacée au ' + fullDT(s.startsAt),
+    body: 'Bonjour ' + c.firstName + ',\n\n'
+      + 'Votre séance prévue ' + fullDT(oldStart) + ' est déplacée.\n'
+      + 'Nouveau créneau : ' + fullDT(s.startsAt) + ' (' + s.duration + ' min)'
+      + (s.location ? '\nLieu : ' + s.location : '') + '\n\n'
+      + 'Merci de me confirmer que cela vous convient.\n' + signature(),
+  };
+}
+
+const mailtoUrl = (to, subject, body) => 'mailto:' + encodeURIComponent(to || '')
+  + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+const smsUrl = (phone, body) => 'sms:' + String(phone || '').replace(/\s/g, '')
+  + '?body=' + encodeURIComponent(body);
+
+/**
+ * Affiche le message prêt à partir : le coach ouvre Mail ou SMS d'un appui,
+ * ou copie le texte si l'appareil n'ouvre pas les liens automatiquement.
+ */
+function messageSheet(c, subject, body, session) {
+  openSheet('Message à ' + c.firstName, `
+    <p class="small muted">Le texte est prêt. Ouvrez votre application Mail ou SMS —
+    rien ne part sans votre validation.</p>
+
+    <div class="row wrap" style="margin:12px 0">
+      ${c.email ? `<a class="btn primary" href="${esc(mailtoUrl(c.email, subject, body))}"
+                      target="_blank" rel="noopener" id="goMail">✉ Ouvrir Mail</a>` : ''}
+      ${c.phone ? `<a class="btn" href="${esc(smsUrl(c.phone, body))}"
+                      target="_blank" rel="noopener" id="goSms">💬 Ouvrir SMS</a>` : ''}
+      <button class="" id="copyMsg">Copier le texte</button>
+    </div>
+
+    <label for="msgSubject">Objet</label>
+    <input id="msgSubject" value="${esc(subject)}" readonly>
+    <label for="msgBody">Message</label>
+    <textarea id="msgBody" rows="12" readonly>${esc(body)}</textarea>
+
+    <div style="height:10px"></div>
+    <button class="block" id="msgDone">Marquer comme prévenu</button>
+  `, () => {
+    const finish = (m) => { if (session) markReminded(session); closeSheet(); toast(m); render(); };
+
+    $('copyMsg').onclick = async () => {
+      const text = subject + '\n\n' + body;
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch (e) {
+        const ta = $('msgBody');
+        ta.removeAttribute('readonly'); ta.select();
+        try { document.execCommand('copy'); } catch (e2) { /* rien de plus à tenter */ }
+        ta.setAttribute('readonly', '');
+      }
+      finish('Texte copié');
+    };
+
+    const mail = $('goMail'); if (mail) mail.onclick = () => setTimeout(() => finish('Message ouvert'), 300);
+    const sms = $('goSms');   if (sms)  sms.onclick  = () => setTimeout(() => finish('Message ouvert'), 300);
+    $('msgDone').onclick = () => finish('Client marqué comme prévenu');
+  });
+}
+
+function markReminded(s) {
+  db.reminded[s.id + '|' + s.startsAt] = nowStr();
+  save();
+}
+
+/* ================================================================
+   5. INTERFACE
+   ================================================================ */
+
+const $ = id => document.getElementById(id);
+let toastTimer = null;
+
+function toast(msg, bad) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (bad ? ' bad' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.add('hidden'), bad ? 4000 : 2300);
+}
+
+function showBanner(html) {
+  const b = $('banner');
+  b.innerHTML = html;
+  b.classList.remove('hidden');
+}
+
+function openSheet(title, html, mount) {
+  $('sheetTitle').textContent = title;
+  $('sheetBody').innerHTML = html;
+  $('backdrop').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  if (mount) mount($('sheetBody'));
+}
+
+function closeSheet() {
+  $('backdrop').classList.add('hidden');
+  $('sheetBody').innerHTML = '';
+  document.body.style.overflow = '';
+}
+
+function form(root) {
+  const data = {};
+  root.querySelectorAll('[name]').forEach(i => {
+    data[i.name] = i.type === 'checkbox' ? i.checked : i.value;
+  });
+  return data;
+}
+
+const pill = (cls, text) => '<span class="pill ' + cls + '">' + esc(text) + '</span>';
+
+function sessionPills(s, c, ord) {
+  const out = [];
+  if (ord[s.id]) out.push(pill('p-flat', 'n°' + ord[s.id]));
+  if (isMilestone(s, c, ord)) out.push(pill('p-special', '★ bilan cardio'));
+  if (c.healthFlag) out.push(pill('p-health', '⚠ santé'));
+  if (s.status !== 'planned') out.push(pill('p-' + s.status, STATUS_SHORT[s.status]));
+  return out.join(' ');
+}
+
+function balancePill(b) {
+  if (b < 0) return pill('p-no_show', b + ' séances');
+  if (b === 0) return pill('p-late_cancel', 'à régler');
+  if (b <= 1) return pill('p-late_cancel', b + ' restante');
+  return pill('p-flat', b + ' restantes');
+}
+
+function selectOpts(map, cur) {
+  return Object.keys(map).map(k =>
+    '<option value="' + esc(k) + '"' + (String(cur) === k ? ' selected' : '') + '>' + esc(map[k]) + '</option>').join('');
+}
+
+/* ================================================================
+   6. ÉCRANS
+   ================================================================ */
+
+const TABS = [
+  { id: 'agenda',   label: 'Agenda',   icon: 'M3 5h18v16H3zM3 9h18M8 3v4M16 3v4' },
+  { id: 'clients',  label: 'Clients',  icon: 'M4 20a6 6 0 0112 0M10 4a4 4 0 110 8 4 4 0 010-8M17 20a5 5 0 00-3-4.6' },
+  { id: 'alerts',   label: 'Alertes',  icon: 'M12 3a6 6 0 016 6c0 5 2 6 2 6H4s2-1 2-6a6 6 0 016-6zM10 20a2 2 0 004 0' },
+  { id: 'suivi',    label: 'Suivi',    icon: 'M4 20V10M10 20V4M16 20v-7M22 20H2' },
+  { id: 'reglages', label: 'Réglages', icon: 'M12 9a3 3 0 100 6 3 3 0 000-6M19.4 15a1.6 1.6 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.6 1.6 0 00-2.7 1.1V21a2 2 0 11-4 0v-.1A1.6 1.6 0 005.6 19.7l-.1.1a2 2 0 11-2.8-2.8l.1-.1A1.6 1.6 0 003 15H3a2 2 0 110-4h.1A1.6 1.6 0 004.3 8.6l-.1-.1a2 2 0 112.8-2.8l.1.1A1.6 1.6 0 009 5.6V3a2 2 0 114 0v.1a1.6 1.6 0 002.7 1.1l.1-.1a2 2 0 112.8 2.8l-.1.1a1.6 1.6 0 001.1 2.7H21a2 2 0 110 4h-.1a1.6 1.6 0 00-1.5 1.3z' },
+];
+
+let screen = 'agenda';
+let cursor = new Date();
+let agendaMode = localStorage.getItem('lmt-view') || 'week';
+let clientOpen = null;
+let query = '';
+let clientFilter = '';
+let showDoneAlerts = false;
+let statMonth = null;
+
+function renderTabs() {
+  const pending = alerts(false).length;
+  $('tabbar').innerHTML = TABS.map(t => `
+    <button class="tab" data-go="${t.id}" ${screen === t.id ? 'aria-current="page"' : ''}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${t.icon}"/></svg>
+      ${esc(t.label)}
+      ${t.id === 'alerts' && pending ? '<span class="count">' + pending + '</span>' : ''}
+    </button>`).join('');
+}
+
+function go(where, id) {
+  screen = where;
+  if (where === 'client') clientOpen = id;
+  render();
+  window.scrollTo(0, 0);
+}
+
+function render() {
+  const titles = { agenda: 'Agenda', clients: 'Clients', client: 'Fiche client',
+                   alerts: 'Alertes', suivi: 'Suivi', reglages: 'Réglages' };
+  $('pageTitle').textContent = titles[screen] || 'LMT Coaching';
+  renderTabs();
+  ({ agenda: viewAgenda, clients: viewClients, client: viewClient,
+     alerts: viewAlerts, suivi: viewSuivi, reglages: viewReglages }[screen] || viewAgenda)();
+}
+
+/* ---- AGENDA ----------------------------------------------------- */
+
+function viewAgenda() {
+  const days = agendaMode === 'day' ? 1 : 7;
+  const start = agendaMode === 'day' ? new Date(cursor) : weekStart(cursor);
+  const ord = ordinals();
+
+  let label;
+  if (agendaMode === 'day') {
+    label = DAYS[isoDay(start)] + ' ' + longDate(start, true);
+  } else {
+    const end = addDays(start, 6);
+    label = start.getMonth() === end.getMonth()
+      ? start.getDate() + ' – ' + end.getDate() + ' ' + MONTHS[end.getMonth()] + ' ' + end.getFullYear()
+      : longDate(start) + ' – ' + longDate(end, true);
+  }
+
+  const from = dateStr(start), to = dateStr(addDays(start, days - 1));
+  const inRange = db.sessions
+    .filter(s => s.startsAt.slice(0, 10) >= from && s.startsAt.slice(0, 10) <= to)
+    .sort((a, b) => a.startsAt < b.startsAt ? -1 : 1);
+  const active = inRange.filter(s => s.status !== 'cancelled').length;
+
+  let grid = '';
+  for (let i = 0; i < days; i++) {
+    const d = addDays(start, i);
+    const key = dateStr(d);
+    const items = inRange.filter(s => s.startsAt.slice(0, 10) === key);
+    grid += `
+      <section class="day ${isToday(d) ? 'today' : ''} ${items.length ? '' : 'free'}">
+        <div class="dayhead">
+          <b>${DAYS[isoDay(d)]}</b><span>${d.getDate()} ${MONTHS[d.getMonth()]}</span>
+          <i>${items.length || 'libre'}</i>
+        </div>
+        ${items.map(s => slot(s, ord)).join('')}
+      </section>`;
+  }
+
+  $('screen').innerHTML = `
+    <div class="stack">
+      <div class="datebar">
+        <button class="iconbtn" data-shift="-1" aria-label="Précédent">‹</button>
+        <div class="label">${esc(label)}</div>
+        <button class="iconbtn" data-shift="1" aria-label="Suivant">›</button>
+      </div>
+      <div class="row wrap">
+        <div class="seg">
+          <button data-mode="week" aria-pressed="${agendaMode === 'week'}">Semaine</button>
+          <button data-mode="day" aria-pressed="${agendaMode === 'day'}">Jour</button>
+        </div>
+        <button class="sm" data-today="1">Aujourd'hui</button>
+        <span class="right small muted">${active ? plural(active, 'cours', 'cours') : 'aucun cours'}</span>
+      </div>
+      <div class="${agendaMode === 'week' ? 'week' : ''}">${grid}</div>
+    </div>
+    <button class="fab" data-new-session="1" aria-label="Nouveau cours">+</button>`;
+
+  if (!db.clients.length) {
+    $('screen').insertAdjacentHTML('afterbegin', `
+      <div class="card" style="margin-bottom:14px">
+        <div class="eyebrow">Première utilisation</div>
+        <h2 style="margin:6px 0 8px">Commencez par ajouter un client</h2>
+        <p class="small muted">Créez sa fiche, posez son horaire récurrent (« tous les mardis à 14h »)
+        et l'agenda se remplit tout seul sur 16 semaines.</p>
+        <div class="row wrap" style="margin-top:12px">
+          <button class="primary" data-new-client="1">Ajouter un client</button>
+          <button data-demo="1">Voir un exemple</button>
+        </div>
+      </div>`);
+  }
+}
+
+function slot(s, ord) {
+  const c = client(s.clientId);
+  if (!c) return '';
+  return `
+    <button class="slot st-${s.status} ${isMilestone(s, c, ord) ? 'milestone' : ''}" data-session="${s.id}">
+      <time>${hhmm(s.startsAt)}</time>
+      <span class="grow">
+        <span class="who truncate">${esc(fullName(c))}</span>
+        <span class="meta">${s.duration} min${s.location ? ' · ' + esc(s.location) : ''} ${sessionPills(s, c, ord)}</span>
+      </span>
+    </button>`;
+}
+
+/* ---- CLIENTS ---------------------------------------------------- */
+
+function viewClients() {
+  const ord = ordinals();
+  const q = query.trim().toLowerCase();
+  const list = db.clients
+    .filter(c => clientFilter === 'all' ? true
+              : clientFilter ? c.status === clientFilter
+              : c.status !== 'archived')
+    .filter(c => !q || (fullName(c) + ' ' + (c.email || '') + ' ' + (c.phone || '')).toLowerCase().includes(q))
+    .sort((a, b) => fullName(a).localeCompare(fullName(b), 'fr'));
+
+  $('screen').innerHTML = `
+    <div class="stack">
+      <input type="search" id="q" placeholder="Rechercher un client…" value="${esc(query)}">
+      <div class="row wrap">
+        <div class="seg">
+          <button data-filter="" aria-pressed="${clientFilter === ''}">Suivis</button>
+          <button data-filter="active" aria-pressed="${clientFilter === 'active'}">Actifs</button>
+          <button data-filter="paused" aria-pressed="${clientFilter === 'paused'}">En pause</button>
+          <button data-filter="all" aria-pressed="${clientFilter === 'all'}">Tous</button>
+        </div>
+        <span class="right small muted">${plural(list.length, 'client')}</span>
+      </div>
+      <div class="list">
+        ${list.length ? list.map(c => clientRow(c, ord)).join('')
+                      : '<div class="empty">Aucun client ne correspond.</div>'}
+      </div>
+    </div>
+    <button class="fab" data-new-client="1" aria-label="Nouveau client">+</button>`;
+
+  const input = $('q');
+  input.addEventListener('input', e => {
+    query = e.target.value;
+    const pos = e.target.selectionStart;
+    viewClients();
+    const next = $('q');
+    next.focus();
+    next.setSelectionRange(pos, pos);
+  });
+}
+
+function clientRow(c, ord) {
+  const st = stats(c, ord);
+  return `
+    <button class="item" data-client="${c.id}">
+      <span class="face ${c.healthFlag ? 'warn' : ''}">${esc(initials(fullName(c)))}</span>
+      <span class="grow">
+        <span class="row" style="gap:6px">
+          <b class="truncate">${esc(fullName(c))}</b>
+          ${c.status !== 'active' ? pill('p-flat', CLIENT_STATUS[c.status]) : ''}
+        </span>
+        <span class="small muted truncate">
+          ${st.next ? 'Prochain : ' + shortDate(st.next.startsAt) + ' à ' + hhmm(st.next.startsAt)
+                    : 'Aucun cours planifié'} · ${st.done} faite(s)
+          ${st.milestone && (st.every - st.progress) <= 2 ? ' · ★ bilan proche' : ''}
+        </span>
+      </span>
+      ${balancePill(st.balance)}
+    </button>`;
+}
+
+/* ---- FICHE CLIENT ----------------------------------------------- */
+
+function viewClient() {
+  const c = client(clientOpen);
+  if (!c) { go('clients'); return; }
+
+  const ord = ordinals();
+  const st = stats(c, ord);
+  const left = st.every - st.progress;
+  const recs = db.recurrences.filter(r => r.clientId === c.id);
+  const pays = db.payments.filter(p => p.clientId === c.id)
+                          .sort((a, b) => a.paidOn < b.paidOn ? 1 : -1);
+  const mine = clientSessions(c.id).sort((a, b) => a.startsAt < b.startsAt ? -1 : 1);
+  const now = nowStr();
+  const soon = mine.filter(s => s.startsAt >= now);
+  const past = mine.filter(s => s.startsAt < now).reverse();
+
+  let bilan = '';
+  if (st.milestone) {
+    const callOn = addDays(parseDT(st.milestone.session.startsAt), -Number(S().milestoneCallDays));
+    bilan = `
+      <div class="notice special" style="margin-top:12px">
+        <b>★ Prochaine séance bilan : n°${st.milestone.ordinal}</b>
+        <p>Prévue ${esc(fullDT(st.milestone.session.startsAt))}.
+        Appeler ${esc(c.firstName)} à partir du <b>${esc(shortDate(callOn))}</b>
+        pour les mesures de fréquence cardiaque.</p>
+      </div>`;
+  }
+
+  const sessionLine = s => `
+    <button class="item" data-session="${s.id}">
+      <span class="grow">
+        <b class="num">${shortDate(s.startsAt)} · ${hhmm(s.startsAt)}</b>
+        <span class="small muted truncate">${esc(s.notes || s.location || s.duration + ' min')}</span>
+      </span>
+      <span class="row" style="gap:4px">${sessionPills(s, c, ord)}</span>
+    </button>`;
+
+  $('screen').innerHTML = `
+    <div class="stack">
+      <button class="ghost sm" data-go="clients" style="align-self:flex-start;padding-left:0">‹ Tous les clients</button>
+
+      <div class="card">
+        <div class="row">
+          <span class="face ${c.healthFlag ? 'warn' : ''}">${esc(initials(fullName(c)))}</span>
+          <span class="grow">
+            <h1>${esc(fullName(c))}</h1>
+            <span class="small muted">${esc(CLIENT_STATUS[c.status])}${c.startedOn ? ' · depuis le ' + shortDate(c.startedOn) : ''}</span>
+          </span>
+          <button class="sm" data-edit-client="${c.id}">Modifier</button>
+        </div>
+        <div class="row wrap" style="margin-top:11px">
+          ${c.phone ? `<a class="btn sm" href="tel:${esc(c.phone)}">📞 ${esc(c.phone)}</a>` : ''}
+          ${c.email ? `<a class="btn sm" href="mailto:${esc(c.email)}">✉ ${esc(c.email)}</a>` : ''}
+        </div>
+      </div>
+
+      <div class="tiles">
+        <div class="tile"><b>${st.done}</b><span>séances faites</span></div>
+        <div class="tile"><b>${st.balance}</b><span>séances payées restantes</span></div>
+        <div class="tile"><b>${st.upcoming}</b><span>cours à venir</span></div>
+        <div class="tile"><b>${left}</b><span>avant le bilan cardio</span></div>
+      </div>
+
+      <div class="card">
+        <div class="row" style="margin-bottom:7px">
+          <span class="eyebrow">Progression vers le bilan</span>
+          <span class="right small muted num">${st.progress} / ${st.every}</span>
+        </div>
+        <div class="bar"><i style="width:${Math.round(st.progress / st.every * 100)}%"></i></div>
+        ${bilan}
+      </div>
+
+      ${(c.healthFlag || c.notes) ? `
+        <div class="${c.healthFlag ? 'notice health' : 'card'}">
+          <b>${c.healthFlag ? '⚠ Vigilance santé' : 'Notes de la fiche'}</b>
+          <p class="small" style="white-space:pre-wrap;margin-top:4px">${esc(c.notes || '')}</p>
+        </div>` : ''}
+
+      <div class="card">
+        <div class="cardhead"><h2>Horaires récurrents</h2>
+          <button class="sm right" data-new-rec="${c.id}">Ajouter</button></div>
+        ${recs.length ? '<div class="list">' + recs.map(r => `
+          <button class="item" data-rec="${r.id}">
+            <span class="grow">
+              <b>${r.intervalWeeks > 1 ? 'Un ' + DAYS[r.weekday] + ' sur ' + r.intervalWeeks
+                                        : 'Tous les ' + DAYS[r.weekday]} à ${esc(r.startTime.replace(':', 'h'))}</b>
+              <span class="small muted">${r.duration} min${r.location ? ' · ' + esc(r.location) : ''}
+                · depuis le ${shortDate(r.anchorDate)}${r.untilDate ? " jusqu'au " + shortDate(r.untilDate) : ''}</span>
+            </span>
+            ${r.active ? pill('p-done', 'actif') : pill('p-cancelled', 'inactif')}
+          </button>`).join('') + '</div>'
+          : '<p class="small muted">Aucun horaire récurrent — les cours sont posés à la main.</p>'}
+      </div>
+
+      <div class="card">
+        <div class="cardhead"><h2>Cours</h2>
+          <button class="sm right" data-new-session="${c.id}">Ajouter</button></div>
+        ${soon.length ? '<div class="eyebrow" style="margin-bottom:6px">À venir</div><div class="list">'
+            + soon.slice(0, 12).map(sessionLine).join('') + '</div>'
+            + (soon.length > 12 ? '<p class="small muted" style="margin-top:8px">+ ' + (soon.length - 12)
+               + ' cours plus loin dans l\'agenda</p>' : '') : ''}
+        ${past.length ? '<div class="eyebrow" style="margin:14px 0 6px">Historique</div><div class="list">'
+            + past.slice(0, 15).map(sessionLine).join('') + '</div>' : ''}
+        ${!mine.length ? '<p class="small muted">Aucun cours enregistré.</p>' : ''}
+      </div>
+
+      <div class="card">
+        <div class="cardhead"><h2>Paiements</h2>
+          <button class="sm right" data-new-pay="${c.id}">Encaisser</button></div>
+        <p class="small muted" style="margin-bottom:9px">
+          ${st.paid} payée(s) · ${st.consumed} consommée(s) · solde <b>${st.balance}</b> · total ${euros(st.cash)}
+        </p>
+        ${pays.length ? '<div class="list">' + pays.map(p => `
+          <button class="item" data-del-pay="${p.id}">
+            <span class="grow"><b>${p.sessionsCount} séances · ${euros(p.amountCents)}</b>
+              <span class="small muted">${shortDate(p.paidOn)}${p.method ? ' · ' + esc(p.method) : ''}${p.note ? ' · ' + esc(p.note) : ''}</span>
+            </span>${pill('p-flat', '✕')}
+          </button>`).join('') + '</div>'
+          : '<p class="small muted">Aucun encaissement enregistré.</p>'}
+      </div>
+
+      <button class="danger block" data-del-client="${c.id}">Supprimer ce client</button>
+    </div>`;
+}
+
+/* ---- ALERTES ---------------------------------------------------- */
+
+const ALERT_ICON = { call: '📞', remind: '✉', pay: '💶', confirm: '✓', empty: '📅' };
+
+function viewAlerts() {
+  const list = alerts(showDoneAlerts);
+  const pending = alerts(false).length;
+
+  $('screen').innerHTML = `
+    <div class="stack">
+      <div class="row wrap">
+        <div class="seg">
+          <button data-alerts="0" aria-pressed="${!showDoneAlerts}">À traiter</button>
+          <button data-alerts="1" aria-pressed="${showDoneAlerts}">Tout</button>
+        </div>
+        <span class="right small muted">${pending ? pending + ' à traiter' : 'rien à traiter'}</span>
+      </div>
+      ${list.length ? list.map(alertCard).join('')
+        : '<div class="empty">Tout est à jour. Rien à faire pour l\'instant.</div>'}
+    </div>`;
+}
+
+function alertCard(a) {
+  const c = client(a.clientId);
+  const s = a.sessionId ? byId(db.sessions, a.sessionId) : null;
+  return `
+    <div class="alert ${a.severity} ${a.done ? 'done' : ''}">
+      <b>${ALERT_ICON[a.type] || '•'} ${esc(a.title)}</b>
+      <span class="small muted">${esc(a.text)}</span>
+      <div class="acts">
+        ${a.type === 'call' && c && c.phone ? `<a class="btn sm primary" href="tel:${esc(c.phone)}">Appeler ${esc(c.phone)}</a>` : ''}
+        ${a.type === 'remind' && s ? `<button class="sm primary" data-send-mail="${s.id}">Préparer le message</button>` : ''}
+        ${s ? `<button class="sm" data-session="${s.id}">Voir le cours</button>` : ''}
+        ${c ? `<button class="sm" data-client="${c.id}">Fiche</button>` : ''}
+        ${a.done ? `<button class="sm ghost" data-unack="${esc(a.key)}">Rouvrir</button>`
+                 : `<button class="sm" data-ack="${esc(a.key)}">C'est fait</button>`}
+      </div>
+    </div>`;
+}
+
+/* ---- SUIVI ------------------------------------------------------ */
+
+function viewSuivi() {
+  const month = statMonth || dateStr(new Date()).slice(0, 7);
+  const [y, m] = month.split('-').map(Number);
+  const inMonth = s => s.startsAt.slice(0, 7) === month;
+  const mSessions = db.sessions.filter(inMonth);
+  const mPays = db.payments.filter(p => (p.paidOn || '').slice(0, 7) === month);
+  const count = st => mSessions.filter(s => s.status === st).length;
+
+  const months = [];
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(y, m - 1 - i, 1);
+    const k = dateStr(d).slice(0, 7);
+    months.push({ k, n: db.sessions.filter(s => s.status === 'done' && s.startsAt.slice(0, 7) === k).length });
+  }
+  const max = Math.max(1, ...months.map(x => x.n));
+
+  const ord = ordinals();
+  let owed = 0, owedCents = 0;
+  db.clients.filter(c => c.status !== 'archived').forEach(c => {
+    const st = stats(c, ord);
+    if (st.balance < 0) { owed += -st.balance; owedCents += -st.balance * (c.rateCents || 0); }
+  });
+
+  const ws = weekStart(new Date());
+  const week = db.sessions.filter(s => s.startsAt.slice(0, 10) >= dateStr(ws)
+    && s.startsAt.slice(0, 10) <= dateStr(addDays(ws, 6))
+    && s.status !== 'cancelled').length;
+
+  $('screen').innerHTML = `
+    <div class="stack">
+      <div class="datebar">
+        <button class="iconbtn" data-month="-1" aria-label="Mois précédent">‹</button>
+        <div class="label">${MONTHS[m - 1]} ${y}</div>
+        <button class="iconbtn" data-month="1" aria-label="Mois suivant">›</button>
+      </div>
+
+      <div class="tiles">
+        <div class="tile"><b>${count('done')}</b><span>séances faites</span></div>
+        <div class="tile"><b>${count('planned')}</b><span>encore prévues</span></div>
+        <div class="tile"><b>${euros(mPays.reduce((n, p) => n + p.amountCents, 0))}</b><span>encaissé</span></div>
+        <div class="tile"><b>${db.clients.filter(c => c.status === 'active').length}</b><span>clients actifs</span></div>
+      </div>
+
+      <div class="card">
+        <div class="cardhead"><h2>Détail du mois</h2></div>
+        <div class="list">
+          <div class="item"><span class="grow">Annulations excusées</span><b>${count('cancelled')}</b></div>
+          <div class="item"><span class="grow">Annulations tardives (décomptées)</span><b>${count('late_cancel')}</b></div>
+          <div class="item"><span class="grow">Absences (décomptées)</span><b>${count('no_show')}</b></div>
+          <div class="item"><span class="grow">Clients vus</span><b>${new Set(mSessions.map(s => s.clientId)).size}</b></div>
+          <div class="item"><span class="grow">Séances faites non payées</span>
+            <b>${owed}${owedCents ? ' · ' + euros(owedCents) : ''}</b></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cardhead"><h2>Séances sur 12 mois</h2></div>
+        <div class="chart">
+          ${months.map(x => `<div title="${x.k} : ${x.n}">
+              <i style="height:${Math.round(x.n / max * 100)}%"></i><small>${x.k.slice(5)}</small></div>`).join('')}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cardhead"><h2>Semaine en cours</h2></div>
+        <p class="small muted">${plural(week, 'cours', 'cours')} à partir du ${shortDate(ws)}.</p>
+      </div>
+    </div>`;
+}
+
+/* ---- RÉGLAGES --------------------------------------------------- */
+
+function viewReglages() {
+  const s = S();
+  $('screen').innerHTML = `
+    <div class="stack">
+      <div class="card">
+        <div class="cardhead"><h2>Vos données</h2></div>
+        <p class="small muted">
+          Elles sont enregistrées dans ce navigateur, sur cet appareil, et ne partent nulle part.
+          Exportez une sauvegarde de temps en temps : c'est aussi ce qui permet de basculer
+          sur un autre téléphone.
+        </p>
+        <div class="row wrap" style="margin-top:12px">
+          <button class="primary" data-export="1">Exporter une sauvegarde</button>
+          <button data-import="1">Restaurer</button>
+        </div>
+        <p class="small muted" style="margin-top:10px">
+          ${db.clients.length} client(s) · ${db.sessions.length} cours · ${db.payments.length} paiement(s)
+        </p>
+        <input type="file" id="importFile" accept="application/json,.json" class="hidden">
+      </div>
+
+      <div class="card">
+        <div class="cardhead"><h2>Coach</h2></div>
+        <label for="coachName">Nom dans les messages</label>
+        <input id="coachName" name="coachName" value="${esc(s.coachName)}">
+        <label for="coachEmail">Votre e-mail</label>
+        <input id="coachEmail" name="coachEmail" type="email" value="${esc(s.coachEmail)}">
+        <label for="coachPhone">Votre téléphone</label>
+        <input id="coachPhone" name="coachPhone" type="tel" value="${esc(s.coachPhone)}">
+      </div>
+
+      <div class="card">
+        <div class="cardhead"><h2>Rappels aux clients</h2></div>
+        <label for="reminderDays">Me le rappeler … jours avant le cours</label>
+        <input id="reminderDays" name="reminderDays" type="number" min="0" max="30" value="${s.reminderDays}">
+        <p class="small muted">L'alerte prépare le message ; un appui ouvre Mail ou SMS,
+        déjà rempli. Réglable client par client depuis sa fiche.</p>
+      </div>
+
+      <div class="card">
+        <div class="cardhead"><h2>Séances bilan</h2></div>
+        <label for="milestoneInterval">Une séance bilan toutes les … séances</label>
+        <input id="milestoneInterval" name="milestoneInterval" type="number" min="1" max="60" value="${s.milestoneInterval}">
+        <label for="milestoneCallDays">M'alerter … jours avant, pour appeler le client</label>
+        <input id="milestoneCallDays" name="milestoneCallDays" type="number" min="1" max="60" value="${s.milestoneCallDays}">
+        <p class="small muted">Le numéro de séance se recalcule en permanence : si un client
+        déplace un cours, la date du bilan et l'alerte suivent.</p>
+      </div>
+
+      <div class="card">
+        <div class="cardhead"><h2>Contrats et paiements</h2></div>
+        <div class="pair">
+          <div><label for="firstContract">Premier contrat</label>
+            <input id="firstContract" name="firstContract" type="number" min="1" value="${s.firstContract}"></div>
+          <div><label for="paymentBlock">Blocs suivants</label>
+            <input id="paymentBlock" name="paymentBlock" type="number" min="1" value="${s.paymentBlock}"></div>
+        </div>
+        <label for="lowBalance">M'alerter quand il reste … séance(s) payée(s)</label>
+        <input id="lowBalance" name="lowBalance" type="number" min="0" value="${s.lowBalance}">
+        <label for="defaultRate">Tarif par défaut d'une séance (€)</label>
+        <input id="defaultRate" name="defaultRate" type="number" step="0.01" min="0"
+               value="${s.defaultRateCents ? (s.defaultRateCents / 100).toFixed(2) : ''}">
+      </div>
+
+      <div class="card">
+        <div class="cardhead"><h2>Agenda</h2></div>
+        <div class="pair">
+          <div><label for="defaultDuration">Durée type (min)</label>
+            <input id="defaultDuration" name="defaultDuration" type="number" min="15" step="5" value="${s.defaultDuration}"></div>
+          <div><label for="horizonWeeks">Cours posés … semaines à l'avance</label>
+            <input id="horizonWeeks" name="horizonWeeks" type="number" min="1" max="104" value="${s.horizonWeeks}"></div>
+        </div>
+      </div>
+
+      <button class="primary block" data-save-settings="1">Enregistrer les réglages</button>
+      <button class="danger block" data-reset="1">Tout effacer</button>
+    </div>`;
+}
+
+/* ================================================================
+   7. FORMULAIRES
+   ================================================================ */
+
+function clientForm(c) {
+  const isNew = !c;
+  c = c || {};
+  openSheet(isNew ? 'Nouveau client' : 'Modifier la fiche', `
+    <div class="pair">
+      <div><label for="fFirst">Prénom</label><input id="fFirst" name="firstName" value="${esc(c.firstName || '')}" required></div>
+      <div><label for="fLast">Nom</label><input id="fLast" name="lastName" value="${esc(c.lastName || '')}"></div>
+    </div>
+    <label for="fPhone">Téléphone</label>
+    <input id="fPhone" name="phone" type="tel" value="${esc(c.phone || '')}" placeholder="06 12 34 56 78">
+    <label for="fMail">E-mail</label>
+    <input id="fMail" name="email" type="email" value="${esc(c.email || '')}">
+    <label for="fNotes">Notes de la fiche (santé, objectifs, contre-indications)</label>
+    <textarea id="fNotes" name="notes" rows="4"
+      placeholder="Ex. : porteuse d'un pacemaker — pas de travail en intensité maximale.">${esc(c.notes || '')}</textarea>
+    <div class="check">
+      <input type="checkbox" id="fHealth" name="healthFlag" ${c.healthFlag ? 'checked' : ''}>
+      <label for="fHealth">⚠ Point de vigilance santé — signalé en rouge sur chaque cours</label>
+    </div>
+    <div class="pair">
+      <div><label for="fStatus">Statut</label>
+        <select id="fStatus" name="status">${selectOpts(CLIENT_STATUS, c.status || 'active')}</select></div>
+      <div><label for="fDur">Durée type (min)</label>
+        <input id="fDur" name="defaultDuration" type="number" min="15" step="5"
+               value="${c.defaultDuration || S().defaultDuration}"></div>
+    </div>
+    <div class="pair">
+      <div><label for="fRate">Tarif séance (€)</label>
+        <input id="fRate" name="rate" type="number" step="0.01" min="0"
+               value="${c.rateCents ? (c.rateCents / 100).toFixed(2) : (S().defaultRateCents ? (S().defaultRateCents / 100).toFixed(2) : '')}"></div>
+      <div><label for="fStart">Début du suivi</label>
+        <input id="fStart" name="startedOn" type="date" value="${esc(c.startedOn || '')}"></div>
+    </div>
+    <div class="pair">
+      <div><label for="fRemind">Rappel — jours avant</label>
+        <input id="fRemind" name="reminderDays" type="number" min="0" max="30"
+               value="${c.reminderDays !== null && c.reminderDays !== undefined ? c.reminderDays : ''}"
+               placeholder="${S().reminderDays}"></div>
+      <div><label for="fMile">Bilan toutes les … séances</label>
+        <input id="fMile" name="milestoneInterval" type="number" min="1" max="60"
+               value="${c.milestoneInterval || ''}" placeholder="${S().milestoneInterval}"></div>
+    </div>
+    <div style="height:8px"></div>
+    <button class="primary block" id="okClient">${isNew ? 'Créer le client' : 'Enregistrer'}</button>
+  `, body => {
+    $('okClient').onclick = () => {
+      const f = form(body);
+      if (!f.firstName.trim()) { toast('Le prénom est obligatoire', true); return; }
+      const patch = {
+        firstName: f.firstName.trim(), lastName: f.lastName.trim(),
+        phone: f.phone.trim() || null, email: f.email.trim() || null,
+        notes: f.notes.trim() || null, healthFlag: f.healthFlag,
+        status: f.status, defaultDuration: Number(f.defaultDuration) || 60,
+        rateCents: f.rate ? Math.round(parseFloat(String(f.rate).replace(',', '.')) * 100) : 0,
+        startedOn: f.startedOn || null,
+        reminderDays: f.reminderDays === '' ? null : Number(f.reminderDays),
+        milestoneInterval: f.milestoneInterval === '' ? null : Number(f.milestoneInterval),
+      };
+      if (isNew) {
+        const created = { id: nextId(), createdAt: nowStr(), ...patch };
+        db.clients.push(created);
+        save(); closeSheet(); toast('Client créé'); go('client', created.id);
+      } else {
+        Object.assign(client(c.id), patch);
+        save(); closeSheet(); toast('Fiche enregistrée'); render();
+      }
+    };
+  });
+}
+
+function sessionForm(clientId, day) {
+  if (!db.clients.length) { toast('Ajoutez d\'abord un client', true); return; }
+  const list = db.clients.filter(c => c.status !== 'archived');
+  const base = day ? dateStr(day) : dateStr(new Date());
+
+  openSheet('Nouveau cours', `
+    <label for="sClient">Client</label>
+    <select id="sClient" name="clientId">
+      ${list.map(c => `<option value="${c.id}" ${Number(clientId) === c.id ? 'selected' : ''}>${esc(fullName(c))}</option>`).join('')}
+    </select>
+
+    <div id="one">
+      <label for="sWhen">Date et heure</label>
+      <input id="sWhen" name="startsAt" type="datetime-local" value="${base}T09:00">
+    </div>
+    <div id="many" class="hidden">
+      <label for="sList">Liste d'horaires — une par ligne</label>
+      <textarea id="sList" name="slots" rows="6"
+        placeholder="04/03/2026 14h00&#10;11/03/2026 14h00&#10;2026-03-18 09:30"></textarea>
+    </div>
+
+    <div class="pair">
+      <div><label for="sDur">Durée (min)</label>
+        <input id="sDur" name="duration" type="number" min="15" step="5" value="${S().defaultDuration}"></div>
+      <div><label for="sPlace">Lieu</label>
+        <input id="sPlace" name="location" placeholder="Salle, domicile…"></div>
+    </div>
+
+    <label for="sNotes">Notes du cours</label>
+    <textarea id="sNotes" name="notes" rows="2" placeholder="Objectif de la séance, matériel…"></textarea>
+
+    <div style="height:8px"></div>
+    <button class="primary block" id="okSession">Créer</button>
+    <div style="height:8px"></div>
+    <button class="ghost block sm" id="toggleMany">Saisir plusieurs créneaux d'un coup</button>
+  `, body => {
+    let many = false;
+    $('toggleMany').onclick = () => {
+      many = !many;
+      $('one').classList.toggle('hidden', many);
+      $('many').classList.toggle('hidden', !many);
+      $('toggleMany').textContent = many ? 'Revenir à un seul créneau' : "Saisir plusieurs créneaux d'un coup";
+      $('okSession').textContent = many ? 'Créer les cours' : 'Créer';
+    };
+
+    $('okSession').onclick = () => {
+      const f = form(body);
+      const cid = Number(f.clientId);
+      const dur = Number(f.duration) || 60;
+      const make = when => db.sessions.push({
+        id: nextId(), clientId: cid, recurrenceId: null, originDate: null,
+        startsAt: when, duration: dur, location: f.location.trim() || null,
+        status: 'planned', notes: many ? null : (f.notes.trim() || null),
+        isSpecial: false, movedCount: 0, movedAt: null,
+      });
+
+      if (many) {
+        const slots = parseSlots(f.slots);
+        if (!slots.length) { toast('Aucun horaire reconnu', true); return; }
+        slots.forEach(make);
+        toast(plural(slots.length, 'cours créé', 'cours créés'));
+      } else {
+        const when = (f.startsAt || '').replace('T', ' ').slice(0, 16);
+        if (!parseDT(when)) { toast('Date invalide', true); return; }
+        make(when);
+        const clash = conflicts(when, dur);
+        toast(clash.length ? 'Créé — créneau partagé avec ' + fullName(client(clash[0].clientId)) : 'Cours créé', !!clash.length);
+      }
+      save(); closeSheet(); render();
+    };
+  });
+}
+
+/** Accepte « 2026-03-04 14:00 », « 04/03/2026 14h00 », « 4/3 14:00 ». */
+function parseSlots(text) {
+  const out = [];
+  (text || '').split(/[\n;]+/).forEach(line => {
+    const raw = line.trim();
+    if (!raw) return;
+    let m = raw.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{1,2})[:hH]?(\d{2})?/);
+    if (m) { out.push(`${m[1]}-${m[2]}-${m[3]} ${pad(m[4])}:${pad(m[5] || 0)}`); return; }
+    m = raw.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\s+(\d{1,2})[:hH]?(\d{2})?/);
+    if (m) {
+      let y = m[3] ? Number(m[3]) : new Date().getFullYear();
+      if (y < 100) y += 2000;
+      out.push(`${y}-${pad(m[2])}-${pad(m[1])} ${pad(m[4])}:${pad(m[5] || 0)}`);
+    }
+  });
+  return out;
+}
+
+function conflicts(startsAt, duration, exceptId) {
+  const a = parseDT(startsAt).getTime();
+  const b = a + duration * 60000;
+  return db.sessions.filter(s => s.id !== exceptId && ['planned', 'done'].includes(s.status))
+    .filter(s => {
+      const x = parseDT(s.startsAt).getTime();
+      return x < b && x + s.duration * 60000 > a;
+    });
+}
+
+function recurrenceForm(clientId, rec) {
+  const isNew = !rec;
+  const c = client(clientId || (rec && rec.clientId));
+  rec = rec || {};
+
+  openSheet(isNew ? 'Horaire récurrent' : "Modifier l'horaire", `
+    <p class="small muted">Les cours sont posés jusqu'à ${S().horizonWeeks} semaines à l'avance.
+    Un cours que vous déplacez ensuite reste où vous l'avez mis.</p>
+    <div class="pair">
+      <div><label for="rDay">Jour</label>
+        <select id="rDay" name="weekday">
+          ${DAYS.slice(1).map((d, i) => `<option value="${i + 1}" ${Number(rec.weekday || 2) === i + 1 ? 'selected' : ''}>${d}</option>`).join('')}
+        </select></div>
+      <div><label for="rTime">Heure</label>
+        <input id="rTime" name="startTime" type="time" value="${esc(rec.startTime || '14:00')}"></div>
+    </div>
+    <div class="pair">
+      <div><label for="rDur">Durée (min)</label>
+        <input id="rDur" name="duration" type="number" min="15" step="5" value="${rec.duration || (c ? c.defaultDuration : 60)}"></div>
+      <div><label for="rEvery">Fréquence</label>
+        <select id="rEvery" name="intervalWeeks">
+          ${[1, 2, 3, 4].map(n => `<option value="${n}" ${Number(rec.intervalWeeks || 1) === n ? 'selected' : ''}>
+            ${n === 1 ? 'Toutes les semaines' : 'Une semaine sur ' + n}</option>`).join('')}
+        </select></div>
+    </div>
+    <div class="pair">
+      <div><label for="rFrom">À partir du</label>
+        <input id="rFrom" name="anchorDate" type="date" value="${esc(rec.anchorDate || dateStr(new Date()))}"></div>
+      <div><label for="rTo">Jusqu'au (facultatif)</label>
+        <input id="rTo" name="untilDate" type="date" value="${esc(rec.untilDate || '')}"></div>
+    </div>
+    <label for="rPlace">Lieu</label>
+    <input id="rPlace" name="location" value="${esc(rec.location || '')}" placeholder="Salle, domicile…">
+    ${isNew ? '' : `<div class="check"><input type="checkbox" id="rActive" name="active" ${rec.active ? 'checked' : ''}>
+      <label for="rActive">Règle active</label></div>`}
+    <div style="height:8px"></div>
+    <button class="primary block" id="okRec">${isNew ? 'Créer et poser les cours' : 'Enregistrer'}</button>
+    ${isNew ? '' : '<div style="height:8px"></div><button class="danger block" id="delRec">Supprimer la règle</button>'}
+  `, body => {
+    $('okRec').onclick = () => {
+      const f = form(body);
+      const patch = {
+        weekday: Number(f.weekday), startTime: f.startTime,
+        duration: Number(f.duration) || 60, intervalWeeks: Number(f.intervalWeeks),
+        anchorDate: f.anchorDate, untilDate: f.untilDate || null,
+        location: f.location.trim() || null,
+      };
+      let target;
+      if (isNew) {
+        target = { id: nextId(), clientId: c.id, active: true, ...patch };
+        db.recurrences.push(target);
+      } else {
+        target = byId(db.recurrences, rec.id);
+        Object.assign(target, patch, { active: f.active });
+        // Les cours à venir non déplacés suivent la nouvelle règle.
+        db.sessions = db.sessions.filter(s =>
+          !(s.recurrenceId === target.id && s.status === 'planned'
+            && s.startsAt >= nowStr() && !s.movedCount));
+        db.skips = db.skips.filter(k => k.recurrenceId !== target.id);
+      }
+      const n = generate(target);
+      save(); closeSheet();
+      toast(plural(n, 'cours posé', 'cours posés'));
+      render();
+    };
+
+    if (!isNew) {
+      $('delRec').onclick = () => {
+        const keep = confirm('Garder les cours déjà posés dans l\'agenda ?\n\nOK = les garder · Annuler = les retirer aussi');
+        if (!keep) {
+          db.sessions = db.sessions.filter(s => !(s.recurrenceId === rec.id && s.status === 'planned' && s.startsAt >= nowStr()));
+        }
+        db.recurrences = db.recurrences.filter(r => r.id !== rec.id);
+        save(); closeSheet(); toast('Règle supprimée'); render();
+      };
+    }
+  });
+}
+
+function paymentForm(clientId) {
+  const c = client(clientId);
+  const st = stats(c);
+  const count = st.paid === 0 ? Number(S().firstContract) : Number(S().paymentBlock);
+  const amount = c.rateCents ? ((count * c.rateCents) / 100).toFixed(2) : '';
+
+  openSheet('Encaissement', `
+    <p class="small muted">Premier contrat : ${S().firstContract} séances.
+    Ensuite, blocs de ${S().paymentBlock} séances payés d'avance.</p>
+    <div class="pair">
+      <div><label for="pCount">Nombre de séances</label>
+        <input id="pCount" name="sessionsCount" type="number" min="1" value="${count}"></div>
+      <div><label for="pAmount">Montant (€)</label>
+        <input id="pAmount" name="amount" type="number" step="0.01" min="0" value="${amount}"></div>
+    </div>
+    <div class="pair">
+      <div><label for="pDate">Date</label>
+        <input id="pDate" name="paidOn" type="date" value="${dateStr(new Date())}"></div>
+      <div><label for="pWay">Moyen</label>
+        <select id="pWay" name="method">
+          ${['Espèces', 'Chèque', 'Virement', 'CB', 'Autre'].map(x => `<option>${x}</option>`).join('')}
+        </select></div>
+    </div>
+    <label for="pNote">Note</label>
+    <input id="pNote" name="note" placeholder="N° de chèque, remarque…">
+    <div style="height:8px"></div>
+    <button class="primary block" id="okPay">Enregistrer l'encaissement</button>
+  `, body => {
+    $('okPay').onclick = () => {
+      const f = form(body);
+      db.payments.push({
+        id: nextId(), clientId: c.id,
+        sessionsCount: Number(f.sessionsCount) || 1,
+        amountCents: f.amount ? Math.round(parseFloat(String(f.amount).replace(',', '.')) * 100) : 0,
+        method: f.method, paidOn: f.paidOn || dateStr(new Date()), note: f.note.trim() || null,
+      });
+      save(); closeSheet(); toast('Encaissement enregistré'); render();
+    };
+  });
+}
+
+/* ---- DÉTAIL D'UN COURS ------------------------------------------ */
+
+function sessionSheet(id) {
+  const s = byId(db.sessions, id);
+  if (!s) return;
+  const c = client(s.clientId);
+  const ord = ordinals();
+  const st = stats(c, ord);
+  const milestone = isMilestone(s, c, ord);
+  const sent = db.reminded[s.id + '|' + s.startsAt];
+
+  openSheet(fullDT(s.startsAt), `
+    <div class="row wrap" style="gap:6px;margin-bottom:11px">
+      ${sessionPills(s, c, ord)} ${pill('p-flat', s.duration + ' min')}
+      ${s.location ? pill('p-flat', s.location) : ''}
+      ${s.movedCount ? pill('p-late_cancel', 'déplacé ' + s.movedCount + '×') : ''}
+    </div>
+
+    <div class="card" style="margin-bottom:11px">
+      <div class="row">
+        <span class="face ${c.healthFlag ? 'warn' : ''}">${esc(initials(fullName(c)))}</span>
+        <span class="grow"><b>${esc(fullName(c))}</b>
+          <span class="small muted">Séance ${ord[s.id] || '—'} · ${st.balance} payée(s) restante(s)</span></span>
+        <button class="sm" data-client="${c.id}" data-close="1">Fiche</button>
+      </div>
+      <div class="row wrap" style="margin-top:10px">
+        ${c.phone ? `<a class="btn sm" href="tel:${esc(c.phone)}">📞 Appeler</a>
+                     <a class="btn sm" href="sms:${esc(c.phone)}">💬 SMS</a>` : ''}
+        ${c.email ? `<a class="btn sm" href="mailto:${esc(c.email)}">✉ E-mail</a>` : ''}
+      </div>
+    </div>
+
+    ${(c.healthFlag || c.notes) ? `
+      <div class="${c.healthFlag ? 'notice health' : 'card'}" style="margin-bottom:11px">
+        <b>${c.healthFlag ? '⚠ Fiche client — vigilance' : 'Fiche client'}</b>
+        <p>${esc(c.notes || 'Aucune note.')}</p>
+      </div>` : ''}
+
+    ${milestone ? `
+      <div class="notice special" style="margin-bottom:11px">
+        <b>★ Séance bilan (n°${ord[s.id] || '?'})</b>
+        <p>Le client doit arriver avec ses mesures de fréquence cardiaque.
+        À lui rappeler ${S().milestoneCallDays} jours avant, par téléphone.</p>
+      </div>` : ''}
+
+    <label for="nNotes">Notes de ce cours</label>
+    <textarea id="nNotes" name="notes" rows="3"
+      placeholder="Exercices réalisés, ressenti, charge…">${esc(s.notes || '')}</textarea>
+    <button class="block sm" id="okNotes" style="margin-top:8px">Enregistrer les notes</button>
+
+    <label>Statut de la séance</label>
+    <div class="row wrap" style="gap:6px">
+      ${Object.keys(STATUS).map(k =>
+        `<button class="sm ${s.status === k ? 'primary' : ''}" data-status="${k}">${STATUS[k]}</button>`).join('')}
+    </div>
+    <p class="small muted" style="margin-top:6px">
+      « Effectué », « Annulé tardif » et « Absent » décomptent une séance payée.</p>
+
+    <label for="mWhen">Déplacer le cours</label>
+    <div class="pair">
+      <input id="mWhen" name="startsAt" type="datetime-local" value="${inputVal(s.startsAt)}">
+      <input id="mDur" name="duration" type="number" min="15" step="5" value="${s.duration}" style="max-width:96px">
+    </div>
+    <button class="block" id="okMove" style="margin-top:8px">Déplacer</button>
+
+    <label>Prévenir le client</label>
+    <button class="block" id="mailReminder" ${(c.email || c.phone) ? '' : 'disabled'}>
+      Préparer le message de rappel</button>
+    <p class="small muted" style="margin-top:6px">
+      ${sent ? 'Rappel marqué envoyé le ' + shortDate(sent) + '.'
+             : 'Le message est pré-rédigé ; il ne part que si vous l\'envoyez depuis votre appli Mail ou SMS.'}
+    </p>
+
+    <div style="height:14px"></div>
+    <button class="danger block" id="delSession">Supprimer ce cours</button>
+  `, body => {
+    $('okNotes').onclick = () => {
+      s.notes = body.querySelector('#nNotes').value.trim() || null;
+      save(); toast('Notes enregistrées');
+    };
+
+    body.querySelectorAll('[data-status]').forEach(b => {
+      b.onclick = () => {
+        s.status = b.dataset.status;
+        save(); closeSheet(); toast('Statut : ' + STATUS[s.status]); render();
+      };
+    });
+
+    $('okMove').onclick = () => {
+      const when = (body.querySelector('#mWhen').value || '').replace('T', ' ').slice(0, 16);
+      if (!parseDT(when)) { toast('Date invalide', true); return; }
+      const old = s.startsAt;
+      s.duration = Number(body.querySelector('#mDur').value) || s.duration;
+      if (when !== old) {
+        s.startsAt = when;
+        s.movedCount = (s.movedCount || 0) + 1;
+        s.movedAt = nowStr();
+      }
+      save();
+      const clash = conflicts(s.startsAt, s.duration, s.id);
+      closeSheet();
+      toast(clash.length ? 'Déplacé — créneau partagé avec ' + fullName(client(clash[0].clientId)) : 'Cours déplacé', !!clash.length);
+      render();
+      if (when !== old && (c.email || c.phone)
+          && confirm('Prévenir ' + c.firstName + ' du changement ?')) {
+        const t = movedText(s, c, old);
+        messageSheet(c, t.subject, t.body, null);
+      }
+    };
+
+    $('mailReminder').onclick = () => {
+      const t = reminderText(s, c, milestone);
+      messageSheet(c, t.subject, t.body, s);
+    };
+
+    $('delSession').onclick = () => {
+      if (!confirm('Supprimer définitivement ce cours ?')) return;
+      if (s.recurrenceId && s.originDate) db.skips.push({ recurrenceId: s.recurrenceId, originDate: s.originDate });
+      db.sessions = db.sessions.filter(x => x.id !== s.id);
+      save(); closeSheet(); toast('Cours supprimé'); render();
+    };
+  });
+}
+
+/* ================================================================
+   8. SAUVEGARDE
+   ================================================================ */
+
+async function exportBackup() {
+  const name = 'lmt-coaching-' + dateStr(new Date()) + '.json';
+  const data = JSON.stringify(db, null, 2);
+
+  if (window.claude && window.claude.downloads) {
+    try {
+      await window.claude.downloads.save({ filename: name, data });
+      toast('Sauvegarde enregistrée');
+      return;
+    } catch (e) {
+      if (e && e.code === 'declined') { toast('Sauvegarde annulée'); return; }
+    }
+  }
+
+  const url = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
+  const a = document.createElement('a');
+  a.href = url; a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  toast('Sauvegarde enregistrée');
+}
+
+function importBackup(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(reader.result);
+      if (!parsed || !Array.isArray(parsed.clients)) throw new Error('format');
+      if (!confirm('Remplacer les données actuelles par cette sauvegarde ?')) return;
+      db = { ...db, ...parsed, settings: { ...DEFAULTS, ...(parsed.settings || {}) } };
+      save(); toast('Sauvegarde restaurée'); render();
+    } catch (e) {
+      toast('Fichier illisible — ce n\'est pas une sauvegarde LMT', true);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function loadDemo() {
+  const id = nextId();
+  db.clients.push({
+    id, createdAt: nowStr(), firstName: 'Exemple', lastName: '(à supprimer)',
+    phone: '0600000000', email: '', address: null,
+    notes: "Exemple de note de fiche : porteur d'un pacemaker, pas de travail en intensité maximale.",
+    healthFlag: true, status: 'active', defaultDuration: 60, rateCents: 4500,
+    reminderDays: null, reminderEmail: true, milestoneInterval: null, startedOn: dateStr(new Date()),
+  });
+  const rec = { id: nextId(), clientId: id, weekday: 2, startTime: '14:00', duration: 60,
+                intervalWeeks: 1, anchorDate: dateStr(new Date()), untilDate: null,
+                location: 'Salle', active: true };
+  db.recurrences.push(rec);
+  generate(rec);
+  db.payments.push({ id: nextId(), clientId: id, sessionsCount: 12, amountCents: 54000,
+                     method: 'Chèque', paidOn: dateStr(new Date()), note: 'Premier contrat' });
+  save(); toast('Exemple chargé'); go('client', id);
+}
+
+/* ================================================================
+   9. ÉVÉNEMENTS
+   ================================================================ */
+
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-go],[data-shift],[data-mode],[data-today],[data-session],[data-client],'
+    + '[data-new-session],[data-new-client],[data-edit-client],[data-del-client],[data-rec],[data-new-rec],'
+    + '[data-new-pay],[data-del-pay],[data-ack],[data-unack],[data-alerts],[data-month],[data-export],'
+    + '[data-import],[data-save-settings],[data-reset],[data-demo],[data-send-mail],[data-filter]');
+  if (!t) return;
+  const d = t.dataset;
+
+  if (d.go) return go(d.go);
+  if (d.shift) { cursor = addDays(cursor, Number(d.shift) * (agendaMode === 'day' ? 1 : 7)); return render(); }
+  if (d.mode) { agendaMode = d.mode; localStorage.setItem('lmt-view', d.mode); return render(); }
+  if (d.today) { cursor = new Date(); return render(); }
+  if (d.filter !== undefined && t.hasAttribute('data-filter')) { clientFilter = d.filter; return render(); }
+
+  if (d.session) { if (d.close) closeSheet(); return sessionSheet(Number(d.session)); }
+  if (d.client) { closeSheet(); return go('client', Number(d.client)); }
+
+  if (d.newSession) return sessionForm(d.newSession === '1' ? null : Number(d.newSession),
+                                       agendaMode === 'day' ? cursor : null);
+  if (d.newClient) return clientForm(null);
+  if (d.editClient) return clientForm(client(d.editClient));
+  if (d.delClient) {
+    const c = client(d.delClient);
+    if (!confirm('Supprimer ' + fullName(c) + ', ses cours et ses paiements ?')) return;
+    db.clients = db.clients.filter(x => x.id !== c.id);
+    db.sessions = db.sessions.filter(x => x.clientId !== c.id);
+    db.recurrences = db.recurrences.filter(x => x.clientId !== c.id);
+    db.payments = db.payments.filter(x => x.clientId !== c.id);
+    save(); toast('Client supprimé'); return go('clients');
+  }
+
+  if (d.rec) return recurrenceForm(null, byId(db.recurrences, d.rec));
+  if (d.newRec) return recurrenceForm(Number(d.newRec), null);
+  if (d.newPay) return paymentForm(Number(d.newPay));
+  if (d.delPay) {
+    if (!confirm('Supprimer cet encaissement ?')) return;
+    db.payments = db.payments.filter(p => p.id !== Number(d.delPay));
+    save(); toast('Paiement supprimé'); return render();
+  }
+
+  if (d.ack) { db.acks[d.ack] = nowStr(); save(); toast('Marqué comme fait'); return render(); }
+  if (d.unack) { delete db.acks[d.unack]; save(); toast('Remis en attente'); return render(); }
+  if (d.alerts !== undefined && t.hasAttribute('data-alerts')) { showDoneAlerts = d.alerts === '1'; return render(); }
+
+  if (d.sendMail) {
+    const s = byId(db.sessions, Number(d.sendMail));
+    const c = client(s.clientId);
+    const txt = reminderText(s, c, isMilestone(s, c, ordinals()));
+    return messageSheet(c, txt.subject, txt.body, s);
+  }
+
+  if (d.month) {
+    const cur = statMonth || dateStr(new Date()).slice(0, 7);
+    const [y, m] = cur.split('-').map(Number);
+    const nd = new Date(y, m - 1 + Number(d.month), 1);
+    statMonth = dateStr(nd).slice(0, 7);
+    return render();
+  }
+
+  if (d.export) return exportBackup();
+  if (d.import) return $('importFile').click();
+  if (d.demo) return loadDemo();
+
+  if (d.saveSettings) {
+    const f = form($('screen'));
+    Object.assign(db.settings, {
+      coachName: f.coachName.trim() || 'LMT Coaching',
+      coachEmail: f.coachEmail.trim(), coachPhone: f.coachPhone.trim(),
+      reminderDays: Number(f.reminderDays) || 0,
+      milestoneInterval: Math.max(1, Number(f.milestoneInterval) || 12),
+      milestoneCallDays: Math.max(1, Number(f.milestoneCallDays) || 7),
+      firstContract: Math.max(1, Number(f.firstContract) || 12),
+      paymentBlock: Math.max(1, Number(f.paymentBlock) || 4),
+      lowBalance: Number(f.lowBalance) || 0,
+      defaultDuration: Number(f.defaultDuration) || 60,
+      horizonWeeks: Math.max(1, Number(f.horizonWeeks) || 16),
+      defaultRateCents: f.defaultRate ? Math.round(parseFloat(String(f.defaultRate).replace(',', '.')) * 100) : 0,
+    });
+    generateAll(); save(); toast('Réglages enregistrés'); return render();
+  }
+
+  if (d.reset) {
+    if (!confirm('Effacer définitivement toutes les données de cet appareil ?')) return;
+    if (!confirm('Confirmez : clients, cours et paiements seront perdus.')) return;
+    db = { seq: 1, clients: [], sessions: [], recurrences: [], payments: [],
+           skips: [], acks: {}, reminded: {}, settings: { ...DEFAULTS } };
+    save(); toast('Données effacées'); return go('agenda');
+  }
+});
+
+document.addEventListener('change', e => {
+  if (e.target.id === 'importFile' && e.target.files[0]) importBackup(e.target.files[0]);
+});
+
+$('sheetX').onclick = closeSheet;
+$('backdrop').addEventListener('click', e => { if (e.target.id === 'backdrop') closeSheet(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && !$('backdrop').classList.contains('hidden')) closeSheet();
+});
+
+/* Balayage horizontal pour changer de semaine. */
+let swipeX = null, swipeY = null;
+document.addEventListener('touchstart', e => {
+  swipeX = e.touches[0].clientX; swipeY = e.touches[0].clientY;
+}, { passive: true });
+document.addEventListener('touchend', e => {
+  if (swipeX === null || screen !== 'agenda' || !$('backdrop').classList.contains('hidden')) return;
+  const dx = e.changedTouches[0].clientX - swipeX;
+  const dy = e.changedTouches[0].clientY - swipeY;
+  if (Math.abs(dx) > 65 && Math.abs(dx) > Math.abs(dy) * 1.6) {
+    cursor = addDays(cursor, (dx < 0 ? 1 : -1) * (agendaMode === 'day' ? 1 : 7));
+    render();
+  }
+  swipeX = null;
+}, { passive: true });
+
+/* ================================================================
+   10. DÉMARRAGE
+   ================================================================ */
+
+load();
+if (!storageOk) {
+  showBanner("Ce navigateur bloque l'enregistrement local (navigation privée ?). "
+           + 'Les données seront perdues à la fermeture.');
+}
+generateAll();
+render();
+</script>
+</body>
+</html>

@@ -7,6 +7,20 @@ automatiques de LMT Coaching.
 Front statique (HTML/CSS/JS, sans build ni dépendance) + API PHP/MySQL :
 elle tourne sur n'importe quel hébergement mutualisé (OVH, o2switch, Ionos…).
 
+## Deux versions
+
+| | `autonome/index.html` | Version complète (ce dossier) |
+| --- | --- | --- |
+| Mise en route | aucune — le fichier suffit | base MySQL + config + CRON |
+| Données | dans le navigateur de l'appareil | base MySQL, partagée entre appareils |
+| Rappels clients | message pré-rédigé, ouvert dans Mail ou SMS | e-mails envoyés automatiquement |
+| Sauvegarde | export/import d'un fichier JSON | sauvegarde de l'hébergeur |
+
+Les deux appliquent exactement les mêmes règles métier (numérotation des
+séances, séances bilan, soldes, alertes). `autonome/index.html` est un fichier
+unique : il s'ouvre depuis n'importe où — un hébergement statique, une clé USB,
+ou directement le fichier — et fonctionne sans réseau.
+
 ---
 
 ## 1. Ce que fait l'application
