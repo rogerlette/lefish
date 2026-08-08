@@ -5,85 +5,63 @@ APP = '/home/user/lefish/lmt-coaching/autonome/index.html'
 SRC = '/tmp/claude-0/-home-user-lefish/cf0aa78f-b5a5-595b-a7d8-3d88a4a3f38d/scratchpad/LMT-39-clients.json'
 
 seed = json.load(open(SRC))
-seed['version'] = 'lmt-2026-08-08-c'
+seed['version'] = 'lmt-2026-08-08-e'
 
-# Les identifiants sont ceux du fichier de clients (1 à 39).
 def cid(n):
     return seed['clients'][n]['id']
 
-# ---- Semaine type : matins, fins de journée, deux créneaux le samedi ----
-SEMAINE = [
-    # lundi
-    {'d': 1, 't': '09:00', 'c': cid(3),  'lieu': 'Salle'},
-    {'d': 1, 't': '10:15', 'c': cid(6),  'lieu': 'Salle'},
-    {'d': 1, 't': '17:30', 'c': cid(10), 'lieu': 'Salle'},
-    {'d': 1, 't': '18:45', 'c': cid(13), 'lieu': 'Domicile'},
-    # mardi
-    {'d': 2, 't': '08:30', 'c': cid(7),  'lieu': 'Salle'},
-    {'d': 2, 't': '14:00', 'c': cid(4),  'lieu': 'Salle'},
-    {'d': 2, 't': '15:15', 'c': cid(16), 'lieu': 'Salle'},
-    {'d': 2, 't': '19:00', 'c': cid(20), 'lieu': 'Salle'},
-    # mercredi
-    {'d': 3, 't': '09:30', 'c': cid(11), 'lieu': 'Salle'},
-    {'d': 3, 't': '11:00', 'c': cid(14), 'lieu': 'Extérieur'},
-    {'d': 3, 't': '17:00', 'c': cid(22), 'lieu': 'Salle'},
-    {'d': 3, 't': '18:15', 'c': cid(24), 'lieu': 'Salle'},
-    # jeudi
-    {'d': 4, 't': '08:30', 'c': cid(17), 'lieu': 'Salle'},
-    {'d': 4, 't': '12:30', 'c': cid(9),  'lieu': 'Salle'},
-    {'d': 4, 't': '17:30', 'c': cid(26), 'lieu': 'Salle'},
-    {'d': 4, 't': '19:00', 'c': cid(30), 'lieu': 'Domicile'},
-    # vendredi — la 12e séance de ce client tombe ici
-    {'d': 5, 't': '09:00', 'c': cid(3),  'lieu': 'Salle'},
-    {'d': 5, 't': '10:15', 'c': cid(12), 'lieu': 'Salle'},
-    {'d': 5, 't': '16:00', 'c': cid(28), 'lieu': 'Salle'},
-    {'d': 5, 't': '17:15', 'c': cid(33), 'lieu': 'Salle'},
-    # samedi
-    {'d': 6, 't': '09:00', 'c': cid(19), 'lieu': 'Extérieur'},
-    {'d': 6, 't': '10:30', 'c': cid(21), 'lieu': 'Salle'},
-]
+# Les trois premières fiches ne sont pas des clients (contact pro, entreprise) :
+# le planning tourne sur les suivantes.
+POOL = list(range(3, 39))
 
-# ---- Historique : dix séances passées pour que la 12e arrive cette semaine ----
-HISTORIQUE = []
-for w in range(1, 6):                       # cinq semaines en arrière
-    HISTORIQUE += [
-        {'weeks': w, 'd': 1, 't': '09:00', 'c': cid(3),  'lieu': 'Salle'},
-        {'weeks': w, 'd': 5, 't': '09:00', 'c': cid(3),  'lieu': 'Salle'},
-        {'weeks': w, 'd': 2, 't': '14:00', 'c': cid(4),  'lieu': 'Salle'},
-        {'weeks': w, 'd': 4, 't': '08:30', 'c': cid(17), 'lieu': 'Salle'},
-    ]
+# ---- Semaine type : cinq cours du lundi au vendredi, quatre le week-end ----
+HORAIRES = {
+    1: ['08:30', '10:00', '12:30', '17:00', '18:30'],
+    2: ['08:30', '10:00', '12:30', '17:00', '18:30'],
+    3: ['09:00', '10:30', '12:00', '17:00', '18:30'],
+    4: ['08:30', '10:00', '12:30', '17:30', '19:00'],
+    5: ['08:30', '10:00', '12:00', '16:30', '18:00'],
+    6: ['09:00', '10:30', '12:00', '14:00'],
+    7: ['09:30', '11:00', '15:00', '17:00'],
+}
+LIEUX = ['Salle', 'Salle', 'Salle', 'Domicile', 'Extérieur']
 
-# ---- Encaissements : forfaits en cours, un solde à zéro pour l'alerte ----
-PAIEMENTS = [
-    {'c': cid(3),  'n': 12, 'cents': 54000, 'ago': 40, 'method': 'Chèque'},
-    {'c': cid(4),  'n': 4,  'cents': 18000, 'ago': 12, 'method': 'Virement'},
-    {'c': cid(17), 'n': 4,  'cents': 18000, 'ago': 21, 'method': 'Espèces'},
-    {'c': cid(10), 'n': 12, 'cents': 54000, 'ago': 6,  'method': 'Chèque'},
-    {'c': cid(13), 'n': 4,  'cents': 18000, 'ago': 3,  'method': 'CB'},
-]
+TEMPLATE = []
+i = 0
+for jour in sorted(HORAIRES):
+    for heure in HORAIRES[jour]:
+        TEMPLATE.append({
+            'd': jour,
+            't': heure,
+            'c': cid(POOL[i % len(POOL)]),
+            'lieu': LIEUX[i % len(LIEUX)],
+        })
+        i += 1
 
-# ---- Horaires récurrents : les semaines suivantes se remplissent seules ----
-RECURRENCES = [
-    {'c': cid(3),  'd': 1, 't': '09:00', 'lieu': 'Salle'},
-    {'c': cid(3),  'd': 5, 't': '09:00', 'lieu': 'Salle'},
-    {'c': cid(4),  'd': 2, 't': '14:00', 'lieu': 'Salle'},
-    {'c': cid(6),  'd': 1, 't': '10:15', 'lieu': 'Salle'},
-    {'c': cid(7),  'd': 2, 't': '08:30', 'lieu': 'Salle'},
-    {'c': cid(10), 'd': 1, 't': '17:30', 'lieu': 'Salle'},
-    {'c': cid(11), 'd': 3, 't': '09:30', 'lieu': 'Salle'},
-    {'c': cid(13), 'd': 1, 't': '18:45', 'lieu': 'Domicile'},
-    {'c': cid(14), 'd': 3, 't': '11:00', 'lieu': 'Extérieur', 'every': 2},
-    {'c': cid(17), 'd': 4, 't': '08:30', 'lieu': 'Salle'},
-    {'c': cid(19), 'd': 6, 't': '09:00', 'lieu': 'Extérieur'},
-    {'c': cid(20), 'd': 2, 't': '19:00', 'lieu': 'Salle'},
-    {'c': cid(22), 'd': 3, 't': '17:00', 'lieu': 'Salle'},
-    {'c': cid(26), 'd': 4, 't': '17:30', 'lieu': 'Salle'},
-    {'c': cid(28), 'd': 5, 't': '16:00', 'lieu': 'Salle'},
-]
+# ---- Semaines matérialisées : trois semaines passées, la semaine en cours ----
+SEMAINES = []
+for decalage in (-3, -2, -1, 0):
+    for x in TEMPLATE:
+        SEMAINES.append({'w': decalage, 'd': x['d'], 't': x['t'], 'c': x['c'], 'lieu': x['lieu']})
+
+# ---- Les semaines suivantes sont tenues par les horaires récurrents ----
+RECURRENCES = [{'c': x['c'], 'd': x['d'], 't': x['t'], 'lieu': x['lieu']} for x in TEMPLATE]
+
+# ---- Encaissements : un forfait par client, trois soldes à sec pour l'alerte ----
+PAIEMENTS = []
+for n, index in enumerate(POOL):
+    if index in (POOL[2], POOL[7], POOL[13]):        # trois clients à relancer
+        continue
+    PAIEMENTS.append({
+        'c': cid(index),
+        'n': 12 if n % 3 == 0 else 4,
+        'cents': 54000 if n % 3 == 0 else 18000,
+        'ago': 5 + (n * 3) % 40,
+        'method': ['Chèque', 'Virement', 'Espèces', 'CB'][n % 4],
+    })
 
 seed['sample'] = {
-    'week': SEMAINE,
-    'history': HISTORIQUE,
+    'weeks': SEMAINES,
     'payments': PAIEMENTS,
     'recurrences': RECURRENCES,
 }
@@ -94,8 +72,8 @@ seed['clients'][3]['notes'] = (
     "Exemple de note de fiche : pacemaker — pas de travail en intensité maximale, "
     "surveiller la récupération entre les séries."
 )
-for i in (3, 4, 6, 10, 13, 17):
-    seed['clients'][i]['rateCents'] = 4500
+for index in POOL:
+    seed['clients'][index]['rateCents'] = 4500
 
 app = open(APP).read()
 body = app.split('<body>', 1)[1].rsplit('</body>', 1)[0].strip()
@@ -106,4 +84,5 @@ body = body.replace('const SEED = null;',
 out = '<title>LMT Coaching</title>\n' + body + '\n'
 open(sys.argv[1], 'w').write(out)
 print('page construite :', len(out), 'octets ·', len(seed['clients']), 'clients ·',
-      len(SEMAINE), 'cours cette semaine ·', len(RECURRENCES), 'horaires récurrents')
+      len(TEMPLATE), 'cours par semaine ·', len(SEMAINES), 'cours posés ·',
+      len(RECURRENCES), 'horaires récurrents ·', len(PAIEMENTS), 'encaissements')

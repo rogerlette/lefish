@@ -686,14 +686,10 @@ function applySample(plan) {
     });
   };
 
-  // La semaine en cours
-  (plan.week || []).forEach(x => {
-    add(x.c, addDays(monday, x.d - 1), x.t, x.min, x.lieu, null, x.bilan);
-  });
-
-  // Un peu de passé, pour que les numéros de séance aient du sens
-  (plan.history || []).forEach(x => {
-    add(x.c, addDays(monday, -7 * x.weeks + (x.d - 1)), x.t, x.min, x.lieu, 'done');
+  // Les semaines matérialisées : « w » vaut 0 pour la semaine en cours,
+  // -1 pour la précédente, et ainsi de suite.
+  (plan.weeks || []).forEach(x => {
+    add(x.c, addDays(monday, 7 * (x.w || 0) + (x.d - 1)), x.t, x.min, x.lieu, null, x.bilan);
   });
 
   // Encaissements déjà faits
