@@ -24,26 +24,43 @@ const SESSION_JOIN =
             c.`health_flag`, c.`milestone_interval`, c.`notes` AS client_notes
      FROM `sessions` s JOIN `clients` c ON c.`id` = s.`client_id` ';
 
-/** Cours qui chevauchent un créneau (hors cours $exceptId). */
+/**
+ * Cours qui chevauchent un créneau (hors cours $exceptId).
+ * Le recoupement est calculé en PHP : les deux moteurs de base n'écrivent pas
+ * l'arithmétique des dates de la même façon, et un créneau ne peut chevaucher
+ * que les cours du même jour ou de la veille.
+ */
 function findConflicts(string $startsAt, int $duration, int $exceptId = 0): array {
-    $end  = date('Y-m-d H:i:s', strtotime($startsAt) + $duration * 60);
+    $start = strtotime($startsAt);
+    $end   = $start + $duration * 60;
+
     $stmt = db()->prepare(
         "SELECT s.`id`, s.`starts_at`, s.`duration`, c.`first_name`, c.`last_name`
          FROM `sessions` s JOIN `clients` c ON c.`id` = s.`client_id`
          WHERE s.`status` IN ('planned','done')
            AND s.`id` <> ?
-           AND s.`starts_at` < ?
-           AND DATE_ADD(s.`starts_at`, INTERVAL s.`duration` MINUTE) > ?"
+           AND s.`starts_at` >= ? AND s.`starts_at` < ?
+         ORDER BY s.`starts_at`"
     );
-    $stmt->execute([$exceptId, $end, $startsAt]);
+    $stmt->execute([
+        $exceptId,
+        date('Y-m-d H:i:s', $start - 86400),
+        date('Y-m-d H:i:s', $end),
+    ]);
 
-    return array_map(function ($r) {
-        return [
-            'id'         => (int) $r['id'],
-            'startsAt'   => $r['starts_at'],
-            'clientName' => trim($r['first_name'] . ' ' . $r['last_name']),
-        ];
-    }, $stmt->fetchAll());
+    $out = [];
+    foreach ($stmt->fetchAll() as $r) {
+        $otherStart = strtotime($r['starts_at']);
+        $otherEnd   = $otherStart + ((int) $r['duration']) * 60;
+        if ($otherStart < $end && $otherEnd > $start) {
+            $out[] = [
+                'id'         => (int) $r['id'],
+                'startsAt'   => $r['starts_at'],
+                'clientName' => trim($r['first_name'] . ' ' . $r['last_name']),
+            ];
+        }
+    }
+    return $out;
 }
 
 function loadSession(int $id): ?array {
@@ -198,7 +215,7 @@ runEndpoint(function () {
                 $moved  = true;
                 $sets[] = '`starts_at` = ?';       $vals[] = $startsAt;
                 $sets[] = '`moved_count` = `moved_count` + 1';
-                $sets[] = '`moved_at` = NOW()';
+                $sets[] = '`moved_at` = ?';        $vals[] = sqlNow();
             }
         }
         if (array_key_exists('duration', $in)) {
@@ -261,7 +278,7 @@ runEndpoint(function () {
         // Occurrence issue d'une règle : mémoriser qu'elle ne doit pas revenir.
         if ($current['recurrence_id'] && $current['origin_date']) {
             $stmt = $db->prepare(
-                'INSERT IGNORE INTO `occurrence_skips` (`recurrence_id`, `origin_date`) VALUES (?, ?)'
+                sqlInsertIgnore() . ' INTO `occurrence_skips` (`recurrence_id`, `origin_date`) VALUES (?, ?)'
             );
             $stmt->execute([(int) $current['recurrence_id'], $current['origin_date']]);
         }

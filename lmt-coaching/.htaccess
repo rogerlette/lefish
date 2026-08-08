@@ -3,9 +3,12 @@
 # ================================================================
 
 # ---- Ne jamais servir les fichiers sensibles ----
-<FilesMatch "\.(sql|md|log|bak|ini)$">
+<FilesMatch "\.(sql|sqlite|sqlite3|db|md|log|bak|ini)$">
   Require all denied
 </FilesMatch>
+
+# ---- Le dossier data/ (base SQLite) n'est jamais servi ----
+RedirectMatch 404 ^/.*/data/.*$
 
 # ---- Forcer HTTPS (les données clients sont personnelles) ----
 <IfModule mod_rewrite.c>

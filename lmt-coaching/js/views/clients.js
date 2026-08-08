@@ -68,7 +68,7 @@ function clientRowHtml(c) {
           ${milestoneSoon ? ' · bilan cardio proche' : ''}
         </span>
       </span>
-      <span>${balanceBadge(st.balance)}</span>
+      <span>${st.sessionsPaid === 0 && st.sessionsConsumed === 0 ? '' : balanceBadge(st.balance)}</span>
     </button>`;
 }
 

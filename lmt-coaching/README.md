@@ -4,15 +4,17 @@ Application mobile (PWA installable sur iPhone et Android) pour gérer les
 clients, l'agenda des séances, les paiements par blocs et les rappels
 automatiques de LMT Coaching.
 
-Front statique (HTML/CSS/JS, sans build ni dépendance) + API PHP/MySQL :
-elle tourne sur n'importe quel hébergement mutualisé (OVH, o2switch, Ionos…).
+Front statique (HTML/CSS/JS, sans build ni dépendance) + API PHP avec une
+base SQLite — aucun serveur de base de données à installer. Elle tourne sur
+n'importe quel hébergement mutualisé (OVH, o2switch, Ionos…), et sait aussi
+parler à MySQL si l'hébergeur l'impose.
 
 ## Deux versions
 
 | | `autonome/index.html` | Version complète (ce dossier) |
 | --- | --- | --- |
-| Mise en route | aucune — le fichier suffit | base MySQL + config + CRON |
-| Données | dans le navigateur de l'appareil | base MySQL, partagée entre appareils |
+| Mise en route | aucune — le fichier suffit | déposer les fichiers + régler le CRON |
+| Données | dans le navigateur de l'appareil | base SQLite (ou MySQL), partagée entre appareils |
 | Rappels clients | message pré-rédigé, ouvert dans Mail ou SMS | e-mails envoyés automatiquement |
 | Sauvegarde | export/import d'un fichier JSON | sauvegarde de l'hébergeur |
 
@@ -107,19 +109,27 @@ C'est le point central : **rien n'est figé à l'avance**.
 ## 3. Installation
 
 ### 3.1 Base de données
-Créez une base MySQL chez votre hébergeur, puis renseignez `api/config.php` :
+Par défaut l'application utilise **SQLite** : rien à créer, rien à configurer.
+Le fichier de base apparaît tout seul dans `data/` au premier lancement, et un
+bandeau propose **« Créer les tables »** à la première connexion (le bouton est
+aussi dans Réglages → Automatisation).
+
+Le dossier `data/` est fermé par son propre `.htaccess` : la base n'est jamais
+téléchargeable depuis le web. Sauvegarder l'application revient à copier ce
+fichier — et le restaurer, à le remettre en place.
+
+Pour utiliser MySQL à la place, dans `api/config.php` :
 
 ```php
+define('DB_DRIVER', 'mysql');
 define('DB_HOST', 'xxx.mysql.db');
 define('DB_NAME', 'lmt_coaching');
 define('DB_USER', 'lmt_coaching');
 define('DB_PASS', '…');
 ```
 
-Créez ensuite les tables, au choix :
-- depuis un terminal : `mysql -u USER -p BASE < api/schema.sql` ;
-- ou depuis l'application : à la première connexion, un bandeau propose
-  **« Créer les tables »** (également dans Réglages → Automatisation).
+Les deux moteurs partagent le même code : seuls les schémas diffèrent
+(`api/schema.sqlite.sql` et `api/schema.sql`).
 
 ### 3.2 Mot de passe d'accès
 Le mot de passe livré est `lmt-coaching` — **changez-le** :
@@ -204,8 +214,9 @@ lmt-coaching/
 │   ├── ui.js                Feuille modale, messages, étiquettes
 │   ├── views/               Une vue par écran
 │   └── app.js               Démarrage, connexion, navigation
+├── data/                    Base SQLite (créée au 1er lancement, jamais servie)
 ├── api/
-│   ├── config.php           ⚙ à personnaliser (identifiants, clés)
+│   ├── config.php           ⚙ à personnaliser (moteur, clés)
 │   ├── bootstrap.php        PDO, session, helpers JSON, réglages
 │   ├── business.php         ★ règles métier (numérotation, bilans, alertes)
 │   ├── mailer.php           Modèles et envoi des e-mails
@@ -220,7 +231,8 @@ lmt-coaching/
 │   ├── cron.php             Tâche planifiée
 │   ├── ical.php             Flux calendrier
 │   ├── install.php          Création des tables
-│   └── schema.sql           Schéma de la base
+│   ├── schema.sqlite.sql    Schéma SQLite (par défaut)
+│   └── schema.sql           Schéma MySQL
 └── tests/api-test.sh        Test de bout en bout de l'API
 ```
 
@@ -249,6 +261,8 @@ L'application stocke des informations de santé (le champ « notes » de la fich
 client). Quelques règles simples :
 
 - servir le site **en HTTPS** (le `.htaccess` force la redirection) ;
+- garder le dossier `data/` hors du web (son `.htaccess` s'en charge) et
+  sauvegarder régulièrement le fichier `.sqlite` ;
 - changer le mot de passe par défaut et les deux clés d'automatisation ;
 - ne pas versionner un `api/config.php` contenant les vrais identifiants ;
 - limiter les notes de santé au strict nécessaire à la sécurité des séances ;

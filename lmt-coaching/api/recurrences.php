@@ -35,9 +35,9 @@ function clearFutureOccurrences(int $recurrenceId): int {
     $stmt = db()->prepare(
         "DELETE FROM `sessions`
          WHERE `recurrence_id` = ? AND `status` = 'planned'
-           AND `starts_at` >= NOW() AND `moved_count` = 0"
+           AND `starts_at` >= ? AND `moved_count` = 0"
     );
-    $stmt->execute([$recurrenceId]);
+    $stmt->execute([$recurrenceId, sqlNow()]);
     return $stmt->rowCount();
 }
 

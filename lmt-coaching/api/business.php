@@ -212,7 +212,7 @@ function generateOccurrences(int $recurrenceId, ?int $horizonWeeks = null): int 
     $step    = max(1, (int) $rec['interval_weeks']) * 7;
     $today   = new DateTime('today');
     $insert  = $db->prepare(
-        'INSERT IGNORE INTO `sessions`
+        sqlInsertIgnore() . ' INTO `sessions`
             (`client_id`, `recurrence_id`, `origin_date`, `starts_at`, `duration`, `location`, `status`)
          VALUES (?, ?, ?, ?, ?, ?, "planned")'
     );

@@ -1,0 +1,4 @@
+# La base de données reste sur le serveur, jamais dans le dépôt.
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm

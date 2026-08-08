@@ -1,0 +1,6 @@
+# La base SQLite ne doit jamais être téléchargeable.
+Require all denied
+<IfModule !mod_authz_core.c>
+  Order allow,deny
+  Deny from all
+</IfModule>

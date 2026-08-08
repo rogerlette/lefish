@@ -8,7 +8,15 @@
  * valeurs, remplissez-le directement sur le serveur.
  */
 
-// ---- Base de données MySQL ----
+// ---- Base de données ----
+// 'sqlite' : aucun serveur à installer, tout tient dans un fichier (recommandé).
+// 'mysql'  : pour un hébergement qui impose MySQL.
+define('DB_DRIVER', 'sqlite');
+
+// Emplacement du fichier SQLite (créé automatiquement au premier lancement).
+define('DB_FILE', __DIR__ . '/../data/lmt-coaching.sqlite');
+
+// ---- Réglages MySQL (ignorés si DB_DRIVER vaut 'sqlite') ----
 define('DB_HOST',    'localhost');
 define('DB_PORT',    3306);
 define('DB_NAME',    'a_renseigner');

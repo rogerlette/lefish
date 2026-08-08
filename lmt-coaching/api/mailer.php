@@ -116,7 +116,8 @@ function tplCancelled(array $s, array $client): array {
  */
 function logReminder(int $sessionId, string $kind, string $sentFor, ?string $to, array $res): bool {
     $stmt = db()->prepare(
-        'INSERT IGNORE INTO `reminder_log` (`session_id`, `kind`, `sent_for`, `recipient`, `ok`, `error`)
+        sqlInsertIgnore() . ' INTO `reminder_log`
+            (`session_id`, `kind`, `sent_for`, `recipient`, `ok`, `error`)
          VALUES (?, ?, ?, ?, ?, ?)'
     );
     $stmt->execute([$sessionId, $kind, $sentFor, $to, $res['ok'] ? 1 : 0, $res['error']]);

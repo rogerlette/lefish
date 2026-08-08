@@ -47,7 +47,7 @@ runEndpoint(function () {
 
     // ---- 12 derniers mois ----
     $stmt = $db->prepare(
-        "SELECT DATE_FORMAT(`starts_at`, '%Y-%m') AS m, COUNT(*) AS n
+        'SELECT ' . sqlMonth('`starts_at`') . " AS m, COUNT(*) AS n
          FROM `sessions`
          WHERE `status` = 'done' AND `starts_at` >= ?
          GROUP BY m ORDER BY m"
@@ -56,7 +56,7 @@ runEndpoint(function () {
     $history = $stmt->fetchAll();
 
     $stmt = $db->prepare(
-        "SELECT DATE_FORMAT(`paid_on`, '%Y-%m') AS m, SUM(`amount_cents`) AS cents
+        'SELECT ' . sqlMonth('`paid_on`') . " AS m, SUM(`amount_cents`) AS cents
          FROM `payments` WHERE `paid_on` >= ? GROUP BY m ORDER BY m"
     );
     $stmt->execute([date('Y-m-01', strtotime($start . ' -11 months'))]);

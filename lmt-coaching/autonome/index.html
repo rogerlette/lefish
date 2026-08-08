@@ -1311,7 +1311,7 @@ function clientRow(c, ord) {
           ${st.milestone && (st.every - st.progress) <= 2 ? ' · bilan cardio proche' : ''}
         </span>
       </span>
-      ${balancePill(st.balance)}
+      ${st.paid === 0 && st.consumed === 0 ? '' : balancePill(st.balance)}
     </button>`;
 }
 

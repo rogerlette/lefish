@@ -43,11 +43,12 @@ runEndpoint(function () {
             respond(['acked' => false]);
         }
 
-        $stmt = db()->prepare(
-            'INSERT INTO `alert_acks` (`alert_key`) VALUES (?)
-             ON DUPLICATE KEY UPDATE `acked_at` = NOW()'
-        );
-        $stmt->execute([$key]);
+        $sql = driver() === 'sqlite'
+            ? 'INSERT INTO `alert_acks` (`alert_key`, `acked_at`) VALUES (?, ?)
+               ON CONFLICT(`alert_key`) DO UPDATE SET `acked_at` = excluded.`acked_at`'
+            : 'INSERT INTO `alert_acks` (`alert_key`, `acked_at`) VALUES (?, ?)
+               ON DUPLICATE KEY UPDATE `acked_at` = VALUES(`acked_at`)';
+        db()->prepare($sql)->execute([$key, sqlNow()]);
         respond(['acked' => true]);
     }
 

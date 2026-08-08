@@ -14,23 +14,62 @@ mb_internal_encoding('UTF-8');
    BASE DE DONNÉES
    ================================================================ */
 
+/** 'sqlite' ou 'mysql'. */
+function driver(): string {
+    return defined('DB_DRIVER') ? DB_DRIVER : 'mysql';
+}
+
 function db(): PDO {
     static $pdo = null;
-    if ($pdo === null) {
-        $dsn = sprintf(
-            'mysql:host=%s;port=%d;dbname=%s;charset=%s',
-            DB_HOST, DB_PORT, DB_NAME, DB_CHARSET
-        );
-        $pdo = new PDO($dsn, DB_USER, DB_PASS, [
-            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::ATTR_EMULATE_PREPARES   => false,
-        ]);
-        // Aligner le fuseau MySQL sur celui de PHP (NOW(), CURRENT_TIMESTAMP).
-        $offset = (new DateTime('now', new DateTimeZone(APP_TZ)))->format('P');
-        $pdo->exec("SET time_zone = '$offset'");
+    if ($pdo !== null) return $pdo;
+
+    $options = [
+        PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES   => false,
+    ];
+
+    if (driver() === 'sqlite') {
+        $dir = dirname(DB_FILE);
+        if (!is_dir($dir)) @mkdir($dir, 0770, true);
+        $pdo = new PDO('sqlite:' . DB_FILE, null, null, $options);
+        $pdo->exec('PRAGMA foreign_keys = ON');
+        $pdo->exec('PRAGMA journal_mode = WAL');
+        $pdo->exec('PRAGMA busy_timeout = 4000');
+        return $pdo;
     }
+
+    $dsn = sprintf(
+        'mysql:host=%s;port=%d;dbname=%s;charset=%s',
+        DB_HOST, DB_PORT, DB_NAME, DB_CHARSET
+    );
+    $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
+    // Aligner le fuseau MySQL sur celui de PHP (NOW(), CURRENT_TIMESTAMP).
+    $offset = (new DateTime('now', new DateTimeZone(APP_TZ)))->format('P');
+    $pdo->exec("SET time_zone = '$offset'");
     return $pdo;
+}
+
+/* ================================================================
+   FRAGMENTS SQL PORTABLES
+   Les deux moteurs ne parlent pas tout à fait le même SQL.
+   ================================================================ */
+
+/** Insertion qui ignore les doublons de clé. */
+function sqlInsertIgnore(): string {
+    return driver() === 'sqlite' ? 'INSERT OR IGNORE' : 'INSERT IGNORE';
+}
+
+/** Extraction « AAAA-MM » d'une colonne date. */
+function sqlMonth(string $column): string {
+    return driver() === 'sqlite'
+        ? "strftime('%Y-%m', $column)"
+        : "DATE_FORMAT($column, '%Y-%m')";
+}
+
+/** Horodatage courant, passé en paramètre plutôt qu'en fonction SQL. */
+function sqlNow(): string {
+    return date('Y-m-d H:i:s');
 }
 
 /* ================================================================
@@ -136,11 +175,12 @@ function settingInt(string $key, int $default = 0): int {
 }
 
 function saveSetting(string $key, $value): void {
-    $stmt = db()->prepare(
-        'INSERT INTO `settings` (`skey`, `svalue`) VALUES (?, ?)
-         ON DUPLICATE KEY UPDATE `svalue` = VALUES(`svalue`)'
-    );
-    $stmt->execute([$key, (string) $value]);
+    $sql = driver() === 'sqlite'
+        ? 'INSERT INTO `settings` (`skey`, `svalue`) VALUES (?, ?)
+           ON CONFLICT(`skey`) DO UPDATE SET `svalue` = excluded.`svalue`'
+        : 'INSERT INTO `settings` (`skey`, `svalue`) VALUES (?, ?)
+           ON DUPLICATE KEY UPDATE `svalue` = VALUES(`svalue`)';
+    db()->prepare($sql)->execute([$key, (string) $value]);
 }
 
 /* ================================================================
