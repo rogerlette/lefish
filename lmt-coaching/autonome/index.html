@@ -2644,6 +2644,7 @@ document.addEventListener('touchend', e => {
 
 load();
 seedOnce();
+if (SEED && SEED.notice) showBanner(esc(SEED.notice));
 if (!storageOk) {
   showBanner("Ce navigateur bloque l'enregistrement local (navigation privée ?). "
            + 'Les données seront perdues à la fermeture.');
