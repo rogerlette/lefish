@@ -50,17 +50,17 @@ const loadAlerts = guard(async function () {
 });
 
 const ALERT_ICONS = {
-  milestone_call: '📞',
-  payment_due:    '💶',
-  to_confirm:     '✓',
-  no_upcoming:    '📅',
-  missing_email:  '✉',
+  milestone_call: 'phone',
+  payment_due:    'euro',
+  to_confirm:     'check',
+  no_upcoming:    'calendar',
+  missing_email:  'mail',
 };
 
 function alertHtml(a) {
   return `
     <div class="alert ${a.severity} ${a.acked ? 'acked' : ''}">
-      <div class="alert-title">${ALERT_ICONS[a.type] || '•'} ${esc(a.title)}</div>
+      <div class="alert-title">${ico(ALERT_ICONS[a.type] || 'check')} ${esc(a.title)}</div>
       <div class="alert-msg">${esc(a.message)}</div>
       <div class="alert-actions">
         ${a.phone && a.type === 'milestone_call'

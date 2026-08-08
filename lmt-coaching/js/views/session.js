@@ -30,21 +30,21 @@ const openSessionSheet = guard(async function (id) {
         <a class="btn small" href="#/client/${c.id}" id="goClient">Fiche</a>
       </div>
       <div class="row wrap" style="margin-top:10px;gap:8px">
-        ${c.phone ? `<a class="btn small" href="tel:${esc(c.phone)}">📞 Appeler</a>
-                     <a class="btn small" href="sms:${esc(c.phone)}">💬 SMS</a>` : ''}
-        ${c.email ? `<a class="btn small" href="mailto:${esc(c.email)}">✉ E-mail</a>` : ''}
+        ${c.phone ? `<a class="btn small" href="tel:${esc(c.phone)}">${ico('phone')} Appeler</a>
+                     <a class="btn small" href="sms:${esc(c.phone)}">${ico('sms')} SMS</a>` : ''}
+        ${c.email ? `<a class="btn small" href="mailto:${esc(c.email)}">${ico('mail')} E-mail</a>` : ''}
       </div>
     </div>
 
     ${c.healthFlag || c.notes ? `
       <div class="${c.healthFlag ? 'health-box' : 'card'}">
-        <strong>${c.healthFlag ? '⚠ Fiche client — vigilance' : 'Fiche client'}</strong>
+        <strong>${c.healthFlag ? ico('alert') + ' Fiche client — vigilance' : 'Fiche client'}</strong>
         <div class="small" style="margin-top:4px;white-space:pre-wrap">${esc(c.notes || 'Aucune note.')}</div>
       </div>` : ''}
 
     ${(s.isMilestone || s.isSpecial) ? `
       <div class="info-box">
-        <strong>★ Séance bilan (n°${s.ordinal || '?'})</strong>
+        <strong>${ico('star')} Séance bilan — n°${s.ordinal || '?'}</strong>
         <div class="small" style="margin-top:4px">
           Le client doit arriver avec ses mesures de fréquence cardiaque.
           Prévenir par téléphone ${esc(store.settings.milestone_call_days || 7)} jours avant.

@@ -60,12 +60,12 @@ function clientRowHtml(c) {
         <span class="row" style="gap:6px">
           <span style="font-weight:600" class="truncate">${esc(c.name)}</span>
           ${c.status !== 'active' ? '<span class="badge b-neutral">' + esc(CLIENT_STATUS[c.status]) + '</span>' : ''}
-          ${c.healthFlag ? '<span class="badge b-health">⚠</span>' : ''}
+          ${c.healthFlag ? '<span class="badge b-health">' + ico('alert') + '</span>' : ''}
         </span>
         <span class="small muted truncate">
           ${next ? 'Prochain : ' + fmtShortDate(next) + ' à ' + fmtTime(next) : 'Aucun cours planifié'}
           · ${st.sessionsDone} faite(s)
-          ${milestoneSoon ? ' · ★ bilan proche' : ''}
+          ${milestoneSoon ? ' · bilan cardio proche' : ''}
         </span>
       </span>
       <span>${balanceBadge(st.balance)}</span>
@@ -106,7 +106,7 @@ function openClientForm(client) {
 
     <div class="check">
       <input type="checkbox" id="healthFlag" name="healthFlag" ${c.healthFlag ? 'checked' : ''}>
-      <label for="healthFlag">⚠ Point de vigilance santé (affiché en rouge sur chaque cours)</label>
+      <label for="healthFlag">Point de vigilance santé — signalé sur chacun de ses cours</label>
     </div>
 
     <div class="field-row">

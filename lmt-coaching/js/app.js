@@ -52,7 +52,7 @@ async function showApp() {
     if (data.defaultPassword) {
       const b = el('banner');
       b.hidden = false;
-      b.innerHTML = '⚠ Mot de passe par défaut : pensez à le changer dans '
+      b.innerHTML = 'Mot de passe par défaut : pensez à le changer dans '
                   + '<span class="mono">api/config.php</span>.';
     }
   } catch (e) {

@@ -18,7 +18,7 @@ async function viewClient(root, id) {
     const callDate = addDays(parseSql(st.nextMilestone.startsAt), -callDays);
     milestoneBox = `
       <div class="info-box">
-        <strong>★ Prochaine séance bilan : n°${st.nextMilestone.ordinal}</strong>
+        <strong>${ico('star')} Prochaine séance bilan — n°${st.nextMilestone.ordinal}</strong>
         <div class="small" style="margin-top:4px">
           Prévue le ${esc(fmtDateTime(st.nextMilestone.startsAt))}.<br>
           Appeler le client à partir du <strong>${esc(fmtShortDate(callDate))}</strong>
@@ -41,8 +41,8 @@ async function viewClient(root, id) {
         <button class="small" id="editClient">Modifier</button>
       </div>
       <div class="row wrap" style="margin-top:10px;gap:8px">
-        ${c.phone ? `<a class="btn small" href="tel:${esc(c.phone)}">📞 ${esc(c.phone)}</a>` : ''}
-        ${c.email ? `<a class="btn small" href="mailto:${esc(c.email)}">✉ E-mail</a>` : ''}
+        ${c.phone ? `<a class="btn small" href="tel:${esc(c.phone)}">${ico('phone')} ${esc(c.phone)}</a>` : ''}
+        ${c.email ? `<a class="btn small" href="mailto:${esc(c.email)}">${ico('mail')} E-mail</a>` : ''}
         ${c.address ? `<span class="badge b-neutral">${esc(c.address)}</span>` : ''}
       </div>
     </div>
@@ -65,7 +65,7 @@ async function viewClient(root, id) {
 
     ${c.healthFlag || c.notes ? `
       <div class="${c.healthFlag ? 'health-box' : 'card'}">
-        <strong>${c.healthFlag ? '⚠ Vigilance santé' : 'Notes de la fiche'}</strong>
+        <strong>${c.healthFlag ? ico('alert') + ' Vigilance santé' : 'Notes de la fiche'}</strong>
         <div class="small" style="margin-top:4px;white-space:pre-wrap">${esc(c.notes || '')}</div>
       </div>` : ''}
 
@@ -149,7 +149,7 @@ function sessionHistoryHtml(sessions) {
           ${s.notes ? esc(s.notes) : (s.location ? esc(s.location) : s.duration + ' min')}
         </span>
       </span>
-      <span class="row" style="gap:4px">${sessionBadges(s)}</span>
+      <span class="row" style="gap:9px">${sessionBadges(s, { hideHealth: true })}</span>
     </button>`;
 
   return `

@@ -13,7 +13,7 @@ async function viewSettings(root) {
   root.innerHTML = `
     ${data.defaultPassword ? `
       <div class="health-box">
-        <strong>Mot de passe par défaut actif</strong>
+        <strong>${ico('alert')} Mot de passe par défaut actif</strong>
         <div class="small">Changez <span class="mono">AUTH_PASSWORD_HASH</span> dans
         <span class="mono">api/config.php</span> (voir le README).</div>
       </div>` : ''}
@@ -41,7 +41,7 @@ async function viewSettings(root) {
         <input type="checkbox" id="notify_on_move" name="notify_on_move" ${Number(s.notify_on_move) ? 'checked' : ''}>
         <label for="notify_on_move">Prévenir le client quand un cours est déplacé ou annulé</label>
       </div>
-      <div class="small muted">${data.mailEnabled ? 'Envoi des e-mails activé.' : '⚠ Envoi désactivé dans config.php (MAIL_ENABLED).'}</div>
+      <div class="small muted">${data.mailEnabled ? 'Envoi des e-mails activé.' : 'Envoi désactivé dans config.php (MAIL_ENABLED).'}</div>
     </div>
 
     <div class="card">
