@@ -1,0 +1,158 @@
+/* ================================================================
+   Nouveau projet — Styles
+   ================================================================ */
+
+/* ---- VARIABLES ---- */
+:root {
+  --bg: #f5f4f0;
+  --surface: #ffffff;
+  --card: #fafaf8;
+  --border: #e4e2dc;
+  --border-strong: #ccc9c0;
+  --text: #1a1916;
+  --muted: #7a7770;
+  --accent: #2563eb;
+  --danger: #dc2626;
+  --radius: 8px;
+}
+
+body.dark {
+  --bg: #141412;
+  --surface: #1e1d1a;
+  --card: #242320;
+  --border: #2e2d28;
+  --border-strong: #3d3c36;
+  --text: #edecea;
+  --muted: #7a7770;
+  --accent: #3b82f6;
+  --danger: #ef4444;
+}
+
+/* ---- BASE ---- */
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ---- HEADER ---- */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 12px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+/* ---- BOUTONS ---- */
+button {
+  font: inherit;
+  cursor: pointer;
+  padding: 7px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-strong);
+  background: var(--card);
+  color: var(--text);
+}
+
+button:hover { background: var(--bg); }
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+button.danger {
+  background: transparent;
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* ---- FORMULAIRE ---- */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin: 20px;
+}
+
+.form-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+input, textarea {
+  font: inherit;
+  flex: 1 1 160px;
+  min-width: 0;
+  padding: 7px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--text);
+}
+
+input:focus, textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+/* ---- LISTE ---- */
+.items { margin: 0 20px 40px; }
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+}
+
+.item-main { flex: 1; min-width: 0; }
+.item-name { font-weight: 500; }
+.item-desc { color: var(--muted); font-size: 13px; }
+
+.item-qty {
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: 13px;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+
+.empty, .error {
+  padding: 24px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.error { color: var(--danger); }
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 600px) {
+  .panel, .items { margin-left: 12px; margin-right: 12px; }
+  .item { flex-wrap: wrap; }
+}
