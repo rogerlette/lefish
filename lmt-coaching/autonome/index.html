@@ -226,6 +226,13 @@ label {
   font-size: 10.5px; font-weight: 600;
   letter-spacing: .14em; text-transform: uppercase; color: var(--ink-faint);
 }
+/* Ligne de sélection : c'est un label, mais pas un libellé de champ */
+.pick-row {
+  margin: 0; font-size: 15px; font-weight: 400; letter-spacing: normal;
+  text-transform: none; color: var(--ink); cursor: pointer;
+}
+.pick-row .small { font-size: 13px; }
+
 .pair { display: flex; gap: 10px; }
 .pair > * { flex: 1; min-width: 0; }
 .check { display: flex; align-items: flex-start; gap: 10px; margin: 14px 0; }
@@ -1563,6 +1570,13 @@ function viewReglages() {
           <button class="primary" data-export="1">Exporter une sauvegarde</button>
           <button data-import="1">Restaurer</button>
         </div>
+        <label>Carnet d'adresses</label>
+        <p class="small muted" style="margin-bottom:10px">
+          Importez un fichier .vcf exporté depuis les Contacts du téléphone :
+          les fiches sont ajoutées, jamais remplacées.
+        </p>
+        <button data-import-vcf="1">Importer des contacts (.vcf)</button>
+        <input type="file" id="vcfFile" accept=".vcf,text/vcard,text/x-vcard" class="hidden">
         <p class="small muted" style="margin-top:10px">
           ${db.clients.length} client(s) · ${db.sessions.length} cours · ${db.payments.length} paiement(s)
         </p>
@@ -2110,6 +2124,163 @@ function loadDemo() {
 }
 
 /* ================================================================
+   8 bis. IMPORT DE CONTACTS (vCard)
+   Le carnet d'adresses du téléphone s'exporte en .vcf : on en tire
+   nom, téléphone et e-mail, sans jamais écraser les fiches existantes.
+   ================================================================ */
+
+/** Déplie les lignes coupées et retire les échappements vCard. */
+function unfoldVcf(text) {
+  return String(text).replace(/\r\n/g, '\n').replace(/\n[ \t]/g, '');
+}
+function unescapeVcf(v) {
+  return String(v).replace(/\\n/gi, '\n').replace(/\\,/g, ',')
+                  .replace(/\\;/g, ';').replace(/\\\\/g, '\\').trim();
+}
+
+/** @return [{firstName, lastName, phone, email, notes}] */
+function parseVcf(text) {
+  const out = [];
+  unfoldVcf(text).split(/BEGIN:VCARD/i).slice(1).forEach(block => {
+    const card = { firstName: '', lastName: '', phone: '', email: '', notes: '', extras: [] };
+    let fn = '';
+
+    block.split('\n').forEach(line => {
+      const sep = line.indexOf(':');
+      if (sep < 0) return;
+      const name = line.slice(0, sep).toUpperCase();
+      const value = unescapeVcf(line.slice(sep + 1));
+      if (!value) return;
+
+      if (name === 'FN') fn = value;
+      else if (name === 'N') {
+        const p = value.split(';');
+        card.lastName = unescapeVcf(p[0] || '');
+        card.firstName = unescapeVcf(p[1] || '');
+      }
+      else if (name.startsWith('TEL')) {
+        const tel = value.replace(/[^\d+ .-]/g, '').trim();
+        if (!card.phone) card.phone = tel;
+        else if (tel && tel !== card.phone) card.extras.push('Autre téléphone : ' + tel);
+      }
+      else if (name.startsWith('EMAIL')) {
+        if (!card.email) card.email = value;
+        else card.extras.push('Autre e-mail : ' + value);
+      }
+      else if (name.startsWith('ADR')) {
+        const adr = value.split(';').filter(Boolean).join(', ');
+        if (adr) card.extras.push('Adresse : ' + adr);
+      }
+      else if (name.startsWith('NOTE')) card.extras.push(value);
+      else if (name.startsWith('BDAY')) card.extras.push('Anniversaire : ' + value);
+    });
+
+    // Certaines fiches n'ont qu'un nom affiché : on le découpe au mieux.
+    if (!card.firstName && !card.lastName && fn) {
+      const parts = fn.trim().split(/\s+/);
+      card.firstName = parts.shift() || fn;
+      card.lastName = parts.join(' ');
+    }
+    if (!card.firstName && !card.lastName) return;
+
+    card.notes = card.extras.join('\n');
+    delete card.extras;
+    out.push(card);
+  });
+  return out;
+}
+
+const digits = v => String(v || '').replace(/\D/g, '');
+
+/** Une fiche existe déjà si le téléphone ou le nom complet correspond. */
+function findExisting(card) {
+  const tel = digits(card.phone).slice(-9);
+  const name = (card.firstName + ' ' + card.lastName).trim().toLowerCase();
+  return db.clients.find(c =>
+    (tel && digits(c.phone).slice(-9) === tel) ||
+    fullName(c).toLowerCase() === name) || null;
+}
+
+function openVcfImport(cards) {
+  if (!cards.length) { toast('Aucun contact lisible dans ce fichier', true); return; }
+
+  const rows = cards.map((card, i) => {
+    const dup = findExisting(card);
+    return { card, dup, i };
+  });
+  const newCount = rows.filter(r => !r.dup).length;
+
+  openSheet('Importer des contacts', `
+    <p class="small muted">
+      ${plural(cards.length, 'contact')} dans le fichier ·
+      ${newCount} à ajouter · ${cards.length - newCount} déjà dans vos fiches.
+      Décochez ce qui n'est pas un client.
+    </p>
+
+    <div class="row wrap" style="margin:14px 0">
+      <button class="sm" id="vcfAll">Tout cocher</button>
+      <button class="sm" id="vcfNone">Tout décocher</button>
+    </div>
+
+    <div class="list" style="border-top:1px solid var(--line-soft)">
+      ${rows.map(r => `
+        <label class="item pick-row">
+          <input type="checkbox" class="vcf-pick" data-i="${r.i}"
+                 style="width:20px;height:20px;min-height:20px;flex:none;accent-color:var(--brand)"
+                 ${r.dup ? '' : 'checked'}>
+          <span class="grow">
+            <b style="display:block">${esc((r.card.firstName + ' ' + r.card.lastName).trim())}</b>
+            <span class="small muted">
+              ${esc(r.card.phone || 'sans téléphone')}${r.card.email ? ' · ' + esc(r.card.email) : ''}
+            </span>
+          </span>
+          ${r.dup ? '<span class="pill p-flat">déjà présent</span>' : ''}
+        </label>`).join('')}
+    </div>
+
+    <div style="height:14px"></div>
+    <button class="primary block" id="vcfGo">Ajouter les contacts cochés</button>
+  `, (body) => {
+    const boxes = () => Array.from(body.querySelectorAll('.vcf-pick'));
+    $('vcfAll').onclick = () => boxes().forEach(b => { b.checked = true; });
+    $('vcfNone').onclick = () => boxes().forEach(b => { b.checked = false; });
+
+    $('vcfGo').onclick = () => {
+      const picked = boxes().filter(b => b.checked).map(b => cards[Number(b.dataset.i)]);
+      if (!picked.length) { toast('Aucun contact coché', true); return; }
+
+      let added = 0, updated = 0;
+      picked.forEach(card => {
+        const existing = findExisting(card);
+        if (existing) {
+          // On complète sans écraser ce qui est déjà saisi.
+          if (!existing.phone && card.phone) existing.phone = card.phone;
+          if (!existing.email && card.email) existing.email = card.email;
+          updated++;
+          return;
+        }
+        db.clients.push({
+          id: nextId(), createdAt: nowStr(),
+          firstName: card.firstName || card.lastName, lastName: card.firstName ? card.lastName : '',
+          phone: card.phone || null, email: card.email || null, address: null,
+          notes: card.notes || null, healthFlag: false, status: 'active',
+          defaultDuration: Number(S().defaultDuration) || 60,
+          rateCents: Number(S().defaultRateCents) || 0,
+          reminderDays: null, reminderEmail: true, milestoneInterval: null,
+          startedOn: null,
+        });
+        added++;
+      });
+
+      save(); closeSheet();
+      toast(plural(added, 'client ajouté', 'clients ajoutés')
+            + (updated ? ' · ' + plural(updated, 'fiche complétée', 'fiches complétées') : ''));
+      go('clients');
+    };
+  });
+}
+
+/* ================================================================
    9. ÉVÉNEMENTS
    ================================================================ */
 
@@ -2117,7 +2288,7 @@ document.addEventListener('click', e => {
   const t = e.target.closest('[data-go],[data-shift],[data-mode],[data-today],[data-session],[data-client],'
     + '[data-new-session],[data-new-client],[data-edit-client],[data-del-client],[data-rec],[data-new-rec],'
     + '[data-new-pay],[data-del-pay],[data-ack],[data-unack],[data-alerts],[data-month],[data-export],'
-    + '[data-import],[data-save-settings],[data-reset],[data-demo],[data-send-mail],[data-filter]');
+    + '[data-import],[data-import-vcf],[data-save-settings],[data-reset],[data-demo],[data-send-mail],[data-filter]');
   if (!t) return;
   const d = t.dataset;
 
@@ -2174,6 +2345,7 @@ document.addEventListener('click', e => {
 
   if (d.export) return exportBackup();
   if (d.import) return $('importFile').click();
+  if (d.importVcf) return $('vcfFile').click();
   if (d.demo) return loadDemo();
 
   if (d.saveSettings) {
@@ -2205,6 +2377,12 @@ document.addEventListener('click', e => {
 
 document.addEventListener('change', e => {
   if (e.target.id === 'importFile' && e.target.files[0]) importBackup(e.target.files[0]);
+  if (e.target.id === 'vcfFile' && e.target.files[0]) {
+    const reader = new FileReader();
+    reader.onload = () => openVcfImport(parseVcf(reader.result));
+    reader.readAsText(e.target.files[0]);
+    e.target.value = '';
+  }
 });
 
 $('sheetX').onclick = closeSheet;

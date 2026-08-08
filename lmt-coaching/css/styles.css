@@ -175,6 +175,13 @@ label {
   font-size: 10.5px; font-weight: 600;
   letter-spacing: .14em; text-transform: uppercase; color: var(--faint);
 }
+/* Ligne de sélection : c'est un label, mais pas un libellé de champ */
+.pick-row {
+  margin: 0; font-size: 15px; font-weight: 400; letter-spacing: normal;
+  text-transform: none; color: var(--text); cursor: pointer;
+}
+.pick-row .small { font-size: 13px; }
+
 .field-row { display: flex; gap: 10px; }
 .field-row > * { flex: 1; min-width: 0; }
 .check { display: flex; align-items: flex-start; gap: 10px; margin: 14px 0; }

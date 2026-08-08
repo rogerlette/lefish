@@ -93,6 +93,16 @@ async function viewSettings(root) {
       <button class="small" id="runCron">Lancer la tâche maintenant</button>
       <button class="small" id="runInstall">Vérifier / créer les tables</button>
     </div>
+
+    <div class="card">
+      <div class="card-title"><h2>Carnet d'adresses</h2></div>
+      <div class="small muted" style="margin-bottom:12px">
+        Importez un fichier .vcf exporté depuis les Contacts du téléphone :
+        les fiches sont ajoutées, jamais remplacées.
+      </div>
+      <button class="small" id="importVcf">Importer des contacts (.vcf)</button>
+      <input type="file" id="vcfFile" accept=".vcf,text/vcard,text/x-vcard" class="hidden">
+    </div>
   `;
 
   el('saveSettings').onclick = guard(async () => {
@@ -114,6 +124,16 @@ async function viewSettings(root) {
           + ' · ' + plural(res.sessionsGenerated || 0, 'cours créé', 'cours créés'));
     refreshAlertCount();
   });
+
+  el('importVcf').onclick = () => el('vcfFile').click();
+  el('vcfFile').onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => openVcfImport(parseVcf(reader.result));
+    reader.readAsText(file);
+    e.target.value = '';
+  };
 
   el('runInstall').onclick = guard(async () => {
     const res = await Api.install();
