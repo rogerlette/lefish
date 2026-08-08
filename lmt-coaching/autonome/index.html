@@ -1568,19 +1568,24 @@ function viewReglages() {
         </p>
         <div class="row wrap" style="margin-top:12px">
           <button class="primary" data-export="1">Exporter une sauvegarde</button>
-          <button data-import="1">Restaurer</button>
+          <button data-import="1">Restaurer un fichier</button>
+          <button data-paste="1">Coller une sauvegarde</button>
         </div>
+        <p class="small muted" style="margin-top:8px">
+          « Coller » sert quand le téléphone ne propose pas le fichier :
+          ouvrez la sauvegarde, copiez tout le texte, collez-le ici.
+        </p>
         <label>Carnet d'adresses</label>
         <p class="small muted" style="margin-bottom:10px">
           Importez un fichier .vcf exporté depuis les Contacts du téléphone :
           les fiches sont ajoutées, jamais remplacées.
         </p>
         <button data-import-vcf="1">Importer des contacts (.vcf)</button>
-        <input type="file" id="vcfFile" accept=".vcf,text/vcard,text/x-vcard" class="hidden">
+        <input type="file" id="vcfFile" class="hidden">
         <p class="small muted" style="margin-top:10px">
           ${db.clients.length} client(s) · ${db.sessions.length} cours · ${db.payments.length} paiement(s)
         </p>
-        <input type="file" id="importFile" accept="application/json,.json" class="hidden">
+        <input type="file" id="importFile" class="hidden">
       </div>
 
       <div class="card">
@@ -2280,6 +2285,45 @@ function openVcfImport(cards) {
   });
 }
 
+/** Restauration par copier-coller, quand le sélecteur de fichiers coince. */
+function openPasteRestore() {
+  openSheet('Coller une sauvegarde', `
+    <p class="small muted">
+      Collez le contenu du fichier de sauvegarde (il commence par
+      <span class="mono">{"seq"</span>) ou d'un fichier de contacts
+      (il commence par <span class="mono">BEGIN:VCARD</span>).
+    </p>
+    <label for="pasteBox">Contenu</label>
+    <textarea id="pasteBox" rows="10" placeholder='{"seq": 1, "clients": [ … ] }'></textarea>
+    <div style="height:10px"></div>
+    <button class="primary block" id="pasteGo">Charger</button>
+  `, () => {
+    $('pasteGo').onclick = () => {
+      const text = $('pasteBox').value.trim();
+      if (!text) { toast('Rien à charger', true); return; }
+
+      if (/^BEGIN:VCARD/i.test(text)) {
+        const cards = parseVcf(text);
+        closeSheet();
+        openVcfImport(cards);
+        return;
+      }
+
+      try {
+        const parsed = JSON.parse(text);
+        if (!parsed || !Array.isArray(parsed.clients)) throw new Error('format');
+        if (!confirm('Remplacer les données actuelles par cette sauvegarde ?')) return;
+        db = { ...db, ...parsed, settings: { ...DEFAULTS, ...(parsed.settings || {}) } };
+        save(); closeSheet();
+        toast(plural(db.clients.length, 'client chargé', 'clients chargés'));
+        go('clients');
+      } catch (e) {
+        toast("Texte non reconnu — ce n'est ni une sauvegarde ni un fichier de contacts", true);
+      }
+    };
+  });
+}
+
 /* ================================================================
    9. ÉVÉNEMENTS
    ================================================================ */
@@ -2288,7 +2332,7 @@ document.addEventListener('click', e => {
   const t = e.target.closest('[data-go],[data-shift],[data-mode],[data-today],[data-session],[data-client],'
     + '[data-new-session],[data-new-client],[data-edit-client],[data-del-client],[data-rec],[data-new-rec],'
     + '[data-new-pay],[data-del-pay],[data-ack],[data-unack],[data-alerts],[data-month],[data-export],'
-    + '[data-import],[data-import-vcf],[data-save-settings],[data-reset],[data-demo],[data-send-mail],[data-filter]');
+    + '[data-import],[data-import-vcf],[data-paste],[data-save-settings],[data-reset],[data-demo],[data-send-mail],[data-filter]');
   if (!t) return;
   const d = t.dataset;
 
@@ -2345,6 +2389,7 @@ document.addEventListener('click', e => {
 
   if (d.export) return exportBackup();
   if (d.import) return $('importFile').click();
+  if (d.paste) return openPasteRestore();
   if (d.importVcf) return $('vcfFile').click();
   if (d.demo) return loadDemo();
 
