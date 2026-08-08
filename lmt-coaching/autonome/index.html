@@ -1160,7 +1160,7 @@ const TABS = [
 
 let screen = 'agenda';
 let cursor = new Date();
-let agendaMode = localStorage.getItem('lmt-view') || 'week';
+let agendaMode = localStorage.getItem('lmt-view') || 'day';
 let clientOpen = null;
 let query = '';
 let clientFilter = '';
@@ -1232,6 +1232,22 @@ function viewAgenda() {
       </section>`;
   }
 
+  // Vue jour : si la journée est vide, on annonce le prochain cours.
+  let dayEmpty = '';
+  if (agendaMode === 'day' && !inRange.length) {
+    const next = db.sessions
+      .filter(x => x.status === 'planned' && x.startsAt >= nowStr())
+      .sort((a, b) => a.startsAt < b.startsAt ? -1 : 1)[0];
+    dayEmpty = `
+      <div class="empty">
+        Aucun cours ce jour.
+        ${next ? '<div class="small" style="margin-top:10px;font-family:var(--sans);font-style:normal">'
+                 + 'Prochain : ' + esc(fullDT(next.startsAt)) + ' — ' + esc(fullName(client(next.clientId)))
+                 + '</div><button class="sm" style="margin-top:12px" data-goto-next="' + next.startsAt.slice(0, 10) + '">'
+                 + 'Aller à ce jour</button>' : ''}
+      </div>`;
+  }
+
   $('screen').innerHTML = `
     <div class="stack">
       <div class="datebar">
@@ -1248,6 +1264,7 @@ function viewAgenda() {
         <span class="right small muted">${active ? plural(active, 'cours', 'cours') : 'aucun cours'}</span>
       </div>
       <div class="${agendaMode === 'week' ? 'week' : ''}">${grid}</div>
+      ${dayEmpty}
     </div>
     <button class="fab" data-new-session="1" aria-label="Nouveau cours">+</button>`;
 
@@ -2355,7 +2372,7 @@ function openPasteRestore() {
    ================================================================ */
 
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-go],[data-shift],[data-mode],[data-today],[data-session],[data-client],'
+  const t = e.target.closest('[data-go],[data-shift],[data-mode],[data-today],[data-goto-next],[data-session],[data-client],'
     + '[data-new-session],[data-new-client],[data-edit-client],[data-del-client],[data-rec],[data-new-rec],'
     + '[data-new-pay],[data-del-pay],[data-ack],[data-unack],[data-alerts],[data-month],[data-export],'
     + '[data-import],[data-import-vcf],[data-paste],[data-save-settings],[data-reset],[data-demo],[data-send-mail],[data-filter]');
@@ -2366,6 +2383,7 @@ document.addEventListener('click', e => {
   if (d.shift) { cursor = addDays(cursor, Number(d.shift) * (agendaMode === 'day' ? 1 : 7)); return render(); }
   if (d.mode) { agendaMode = d.mode; localStorage.setItem('lmt-view', d.mode); return render(); }
   if (d.today) { cursor = new Date(); return render(); }
+  if (d.gotoNext) { cursor = parseDT(d.gotoNext); return render(); }
   if (d.filter !== undefined && t.hasAttribute('data-filter')) { clientFilter = d.filter; return render(); }
 
   if (d.session) { if (d.close) closeSheet(); return sessionSheet(Number(d.session)); }

@@ -7,7 +7,7 @@ const store = {
   defaultPassword: false,
 
   // Agenda
-  view: localStorage.getItem('agendaView') || 'week',  // 'week' | 'day'
+  view: localStorage.getItem('agendaView') || 'day',   // 'day' | 'week'
   cursor: new Date(),                                   // jour de référence affiché
   sessions: [],
 
