@@ -1,0 +1,38 @@
+# ================================================================
+# LMT Coaching — règles serveur (Apache / OVH, o2switch, Ionos…)
+# ================================================================
+
+# ---- Ne jamais servir les fichiers sensibles ----
+<FilesMatch "\.(sql|md|log|bak|ini)$">
+  Require all denied
+</FilesMatch>
+
+# ---- Forcer HTTPS (les données clients sont personnelles) ----
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !https
+  RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+</IfModule>
+
+# ---- Types corrects ----
+<IfModule mod_mime.c>
+  AddType application/manifest+json .webmanifest
+  AddType text/calendar .ics
+</IfModule>
+
+# ---- Pas de mise en cache de l'API ----
+<IfModule mod_headers.c>
+  <FilesMatch "\.(php)$">
+    Header set Cache-Control "no-store"
+  </FilesMatch>
+  Header set X-Content-Type-Options "nosniff"
+  Header set Referrer-Policy "same-origin"
+</IfModule>
+
+# ---- Le service worker doit toujours être frais ----
+<Files "sw.js">
+  <IfModule mod_headers.c>
+    Header set Cache-Control "no-cache"
+  </IfModule>
+</Files>

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="LMT Coaching">
+  <rect width="512" height="512" rx="112" fill="#ff6b35"/>
+  <g fill="#ffffff">
+    <!-- Haltère -->
+    <rect x="96"  y="216" width="34" height="80"  rx="12"/>
+    <rect x="140" y="186" width="46" height="140" rx="16"/>
+    <rect x="186" y="238" width="140" height="36" rx="14"/>
+    <rect x="326" y="186" width="46" height="140" rx="16"/>
+    <rect x="382" y="216" width="34" height="80"  rx="12"/>
+  </g>
+</svg>
