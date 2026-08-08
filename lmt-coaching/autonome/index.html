@@ -2251,25 +2251,57 @@ function sessionSheet(id) {
    8. SAUVEGARDE
    ================================================================ */
 
-async function exportBackup() {
+/**
+ * Sauvegarde : téléchargement quand le navigateur l'autorise, copie du texte
+ * sinon. Les deux chemins sont offerts pour qu'aucun appareil ne bloque la
+ * sortie des données.
+ */
+function exportBackup() {
   const name = 'lmt-coaching-' + dateStr(new Date()) + '.json';
   const data = JSON.stringify(db, null, 2);
+  const poids = Math.round(data.length / 1024);
 
-  if (window.claude && window.claude.downloads) {
-    try {
-      await window.claude.downloads.save({ filename: name, data });
-      toast('Sauvegarde enregistrée');
-      return;
-    } catch (e) {
-      if (e && e.code === 'declined') { toast('Sauvegarde annulée'); return; }
-    }
-  }
+  openSheet('Sauvegarde', `
+    <p class="small muted">
+      ${plural(db.clients.length, 'client')} · ${plural(db.sessions.length, 'cours', 'cours')} ·
+      ${plural(db.payments.length, 'paiement')} — ${poids} Ko.
+      Téléchargez le fichier, ou copiez le texte si votre navigateur refuse le
+      téléchargement. Pour le remettre en place : Réglages → Restaurer, ou Coller.
+    </p>
 
-  const url = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
-  const a = document.createElement('a');
-  a.href = url; a.download = name; a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
-  toast('Sauvegarde enregistrée');
+    <div class="row wrap" style="margin:12px 0">
+      <button class="primary" id="dlBackup">Télécharger le fichier</button>
+      <button id="copyBackup">Copier le texte</button>
+    </div>
+
+    <label for="backupBox">Contenu de la sauvegarde</label>
+    <textarea id="backupBox" rows="8" readonly>${esc(data)}</textarea>
+  `, () => {
+    $('dlBackup').onclick = () => {
+      try {
+        const url = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
+        const a = document.createElement('a');
+        a.href = url; a.download = name; a.rel = 'noopener';
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+        toast('Fichier ' + name);
+      } catch (e) {
+        toast('Téléchargement refusé — utilisez « Copier le texte »', true);
+      }
+    };
+
+    $('copyBackup').onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(data);
+      } catch (e) {
+        const ta = $('backupBox');
+        ta.removeAttribute('readonly'); ta.select();
+        try { document.execCommand('copy'); } catch (e2) { /* rien de plus à tenter */ }
+        ta.setAttribute('readonly', '');
+      }
+      toast('Sauvegarde copiée');
+    };
+  });
 }
 
 function importBackup(file) {
