@@ -10,10 +10,11 @@ async function viewAgenda(root) {
       <div class="label" id="agLabel">…</div>
       <button class="icon-btn" id="agNext" aria-label="Suivant">›</button>
     </div>
-    <div class="row wrap" style="margin-bottom:12px">
+    <div id="agStrip"></div>
+    <div class="row wrap" style="margin:12px 0">
       <div class="segmented">
-        <button data-view="week" class="${store.view === 'week' ? 'on' : ''}">Semaine</button>
         <button data-view="day"  class="${store.view === 'day' ? 'on' : ''}">Jour</button>
+        <button data-view="week" class="${store.view === 'week' ? 'on' : ''}">Semaine</button>
       </div>
       <button class="small" id="agToday">Aujourd'hui</button>
       <span class="right small muted" id="agCount"></span>
@@ -34,7 +35,12 @@ async function viewAgenda(root) {
   enableSwipe(el('agDays'), shiftAgenda);
 
   await guard(async () => {
-    store.sessions = await Api.sessions(range.from, range.to);
+    const week = startOfWeek(store.cursor);
+    store.weekSessions = await Api.sessions(toDateStr(week), toDateStr(addDays(week, 6)));
+    store.sessions = store.view === 'day'
+      ? store.weekSessions.filter(s => s.startsAt.slice(0, 10) === range.from)
+      : store.weekSessions;
+    renderStrip(el('agStrip'));
     renderDays(el('agDays'), range);
     const active = store.sessions.filter(s => s.status !== 'cancelled').length;
     el('agCount').textContent = active ? plural(active, 'cours', 'cours') : 'aucun cours';
@@ -74,6 +80,53 @@ function enableSwipe(node, onSwipe) {
   }, { passive: true });
 }
 
+/** Bandeau des sept jours : charge de la semaine et navigation d'un appui. */
+function renderStrip(container) {
+  const start = startOfWeek(store.cursor);
+  const short = ['', 'lun', 'mar', 'mer', 'jeu', 'ven', 'sam', 'dim'];
+  let html = '<div class="weekstrip">';
+
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(start, i);
+    const key = toDateStr(d);
+    const n = (store.weekSessions || []).filter(s =>
+      s.startsAt.slice(0, 10) === key && s.status !== 'cancelled').length;
+    const selected = store.view === 'day' && key === toDateStr(store.cursor);
+    html += `
+      <button class="wday ${isToday(d) ? 'today' : ''}" data-day="${key}" aria-pressed="${selected}">
+        <em>${short[((d.getDay() + 6) % 7) + 1]}</em>
+        <b>${d.getDate()}</b>
+        <u class="${n ? '' : 'none'}">${n || ''}</u>
+      </button>`;
+  }
+  container.innerHTML = html + '</div>';
+
+  qsa('[data-day]', container).forEach(b => {
+    b.onclick = () => {
+      store.cursor = parseSql(b.dataset.day);
+      if (store.view !== 'day') setAgendaView('day');
+      viewAgenda(el('app'));
+    };
+  });
+}
+
+/** Journée détaillée : plage horaire complète et respirations entre les cours. */
+function dayBodyHtml(items) {
+  let out = '';
+  items.forEach((s, i) => {
+    if (i > 0) {
+      const prev = items[i - 1];
+      const gap = (parseSql(s.startsAt) - parseSql(prev.startsAt)) / 60000 - prev.duration;
+      if (gap >= 45) {
+        const h = Math.floor(gap / 60), m = Math.round(gap % 60);
+        out += `<div class="gap">${h ? h + ' h ' : ''}${m ? m + ' min' : ''} de libre</div>`;
+      }
+    }
+    out += slotHtml(s, true);
+  });
+  return out;
+}
+
 function renderDays(container, range) {
   const start = parseSql(range.from);
   const count = store.view === 'day' ? 1 : 7;
@@ -88,15 +141,29 @@ function renderDays(container, range) {
     const d = addDays(start, i);
     const key = toDateStr(d);
     const items = byDay[key] || [];
-    html += `
-      <section class="day ${isToday(d) ? 'today' : ''} ${items.length ? '' : 'free'}">
-        <div class="day-head">
-          <span class="day-name">${WEEKDAYS[((d.getDay() + 6) % 7) + 1]}</span>
-          <span class="day-date">${d.getDate()} ${MONTHS[d.getMonth()]}</span>
-          <span class="day-count">${items.length || 'libre'}</span>
-        </div>
-        ${items.map(slotHtml).join('')}
-      </section>`;
+    if (count === 1) {
+      const total = items.reduce((n, s) => n + s.duration, 0);
+      html += `
+        <section class="day today">
+          <div class="dayline">
+            <b>${WEEKDAYS[((d.getDay() + 6) % 7) + 1]} ${d.getDate()} ${MONTHS[d.getMonth()]}</b>
+            <span>${items.length ? plural(items.length, 'cours', 'cours') + ' · '
+                     + (total >= 60 ? Math.floor(total / 60) + ' h' + (total % 60 ? String(total % 60).padStart(2, '0') : '')
+                                    : total + ' min') : ''}</span>
+          </div>
+          ${items.length ? dayBodyHtml(items) : '<div class="empty">Aucun cours ce jour.</div>'}
+        </section>`;
+    } else {
+      html += `
+        <section class="day ${isToday(d) ? 'today' : ''} ${items.length ? '' : 'free'}">
+          <div class="day-head">
+            <span class="day-name">${WEEKDAYS[((d.getDay() + 6) % 7) + 1]}</span>
+            <span class="day-date">${d.getDate()} ${MONTHS[d.getMonth()]}</span>
+            <span class="day-count">${items.length || 'libre'}</span>
+          </div>
+          ${items.map(s => slotHtml(s)).join('')}
+        </section>`;
+    }
   }
 
   container.className = store.view === 'week' ? 'week-grid' : '';
@@ -107,10 +174,13 @@ function renderDays(container, range) {
   });
 }
 
-function slotHtml(s) {
+function slotHtml(s, withRange) {
+  const time = withRange
+    ? `<span class="range">${fmtTime(s.startsAt)}<small>${fmtTime(s.endsAt)}</small></span>`
+    : `<span class="slot-time">${fmtTime(s.startsAt)}</span>`;
   return `
     <button class="slot s-${s.status} ${s.isMilestone || s.isSpecial ? 'milestone' : ''}" data-id="${s.id}">
-      <span class="slot-time">${fmtTime(s.startsAt)}</span>
+      ${time}
       <span class="slot-main">
         <span class="slot-name truncate">${esc(s.clientName)}</span>
         <span class="slot-meta">

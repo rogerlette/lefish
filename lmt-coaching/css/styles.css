@@ -377,6 +377,60 @@ label {
 .slot.milestone::before { background: var(--bronze); box-shadow: 0 0 0 3px var(--bronze-soft); }
 .slot.milestone .slot-time { color: var(--bronze); }
 
+
+/* ---- BANDEAU DE SEMAINE ----------------------------------------- */
+.weekstrip {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;
+  padding: 4px; border: 1px solid var(--border); border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+.wday {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 8px 0 7px; min-height: 0;
+  border: none; border-radius: var(--radius); background: transparent;
+}
+.wday em {
+  font-style: normal; font-size: 9.5px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--faint);
+}
+.wday b {
+  font-family: var(--serif); font-size: 17px; font-weight: 600;
+  font-variant-numeric: tabular-nums; line-height: 1;
+}
+.wday u {
+  display: block; min-width: 16px; height: 16px; line-height: 16px;
+  border-radius: 8px; text-decoration: none;
+  background: var(--sunken); color: var(--muted);
+  font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.wday u.none { background: transparent; color: transparent; }
+.wday.today em, .wday.today b { color: var(--bronze); }
+.wday[aria-pressed="true"] { background: var(--brand-fill); }
+.wday[aria-pressed="true"] em,
+.wday[aria-pressed="true"] b { color: var(--brand-on); }
+.wday[aria-pressed="true"] u { background: var(--brand-on); color: var(--brand-fill); }
+
+/* ---- JOURNÉE DÉTAILLÉE ------------------------------------------ */
+.dayline { display: flex; align-items: baseline; gap: 10px; margin: 2px 0 10px; }
+.dayline b { font-family: var(--serif); font-size: 19px; font-weight: 600; }
+.dayline span { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+
+.gap {
+  display: flex; align-items: center; gap: 10px;
+  padding: 3px 4px; color: var(--faint); font-size: 11px;
+  letter-spacing: .08em; text-transform: uppercase;
+}
+.gap::before, .gap::after { content: ''; height: 1px; background: var(--border-soft); }
+.gap::before { width: 52px; flex: none; }
+.gap::after { flex: 1; }
+
+.slot .range {
+  font-family: var(--serif); font-size: 15px; font-weight: 600;
+  font-variant-numeric: tabular-nums; width: 52px; flex: none; padding-top: 1px;
+  line-height: 1.25;
+}
+.slot .range small { display: block; font-size: 11px; font-weight: 400; color: var(--faint); }
+
 /* ---- MENTIONS --------------------------------------------------- */
 .badge {
   display: inline-flex; align-items: center; gap: 4px;

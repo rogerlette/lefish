@@ -20,7 +20,7 @@
    ================================================================ */
 
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
 
   /* Craie minérale, encre profonde, vert de maison, bronze */
   --ground: #f1f2ef;
@@ -58,69 +58,18 @@
   --rail: 64px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --ground: #0d1210;
-    --surface: #141a17;
-    --sunken: #101614;
-    --ink: #e9ede9;
-    --ink-soft: #93a099;
-    --ink-faint: #6c7a73;
-    --line: #232c27;
-    --line-soft: #1b231f;
 
-    --brand: #7fbfa0;
-    --brand-fill: #22503c;
-    --brand-on: #eaf3ee;
-    --brand-soft: #16241d;
-    --bronze: #c99a5b;
-    --bronze-soft: #241d12;
-    --bronze-ink: #17110a;
-
-    --st-planned: #8fb0c6;   --st-planned-bg: #16212a;
-    --st-done: #6cba8b;      --st-done-bg: #12241a;
-    --st-cancel: #6c7a73;    --st-cancel-bg: #191f1c;
-    --st-late: #c99a5b;      --st-late-bg: #241d12;
-    --st-absent: #d97a6c;    --st-absent-bg: #271615;
-
-    --sheet-shadow: 0 -8px 40px rgba(0, 0, 0, .6);
-  }
-}
-
-:root[data-theme="dark"] {
-  --ground: #0d1210;
-  --surface: #141a17;
-  --sunken: #101614;
-  --ink: #e9ede9;
-  --ink-soft: #93a099;
-  --ink-faint: #6c7a73;
-  --line: #232c27;
-  --line-soft: #1b231f;
-
-  --brand: #7fbfa0;
-  --brand-fill: #22503c;
-  --brand-on: #eaf3ee;
-  --brand-soft: #16241d;
-  --bronze: #c99a5b;
-  --bronze-soft: #241d12;
-  --bronze-ink: #17110a;
-
-  --st-planned: #8fb0c6;   --st-planned-bg: #16212a;
-  --st-done: #6cba8b;      --st-done-bg: #12241a;
-  --st-cancel: #6c7a73;    --st-cancel-bg: #191f1c;
-  --st-late: #c99a5b;      --st-late-bg: #241d12;
-  --st-absent: #d97a6c;    --st-absent-bg: #271615;
-
-  --sheet-shadow: 0 -8px 40px rgba(0, 0, 0, .6);
-}
 
 /* ---- BASE ------------------------------------------------------ */
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
+/* L'application est volontairement en clair : elle s'utilise en salle,
+   souvent en pleine lumière, et le carnet doit rester un carnet blanc. */
 body {
   margin: 0;
   min-height: 100vh;
   background: var(--ground);
+  color-scheme: light;
   color: var(--ink);
   font-family: var(--sans);
   font-size: 15px;
@@ -402,6 +351,61 @@ label {
 .slot.milestone::before { background: var(--bronze); box-shadow: 0 0 0 3px var(--bronze-soft); }
 .slot.milestone time { color: var(--bronze); }
 
+
+/* ---- BANDEAU DE SEMAINE ----------------------------------------- */
+.weekstrip {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px;
+  padding: 4px; border: 1px solid var(--line); border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+.wday {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 8px 0 7px; min-height: 0;
+  border: none; border-radius: var(--radius); background: transparent;
+}
+.wday em {
+  font-style: normal; font-size: 9.5px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--ink-faint);
+}
+.wday b {
+  font-family: var(--serif); font-size: 17px; font-weight: 600;
+  font-variant-numeric: tabular-nums; line-height: 1;
+}
+.wday u {
+  display: block; min-width: 16px; height: 16px; line-height: 16px;
+  border-radius: 8px; text-decoration: none;
+  background: var(--sunken); color: var(--ink-soft);
+  font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.wday u.none { background: transparent; color: transparent; }
+.wday.today em { color: var(--bronze); }
+.wday.today b { color: var(--bronze); }
+.wday[aria-pressed="true"] { background: var(--brand-fill); }
+.wday[aria-pressed="true"] em,
+.wday[aria-pressed="true"] b { color: var(--brand-on); }
+.wday[aria-pressed="true"] u { background: var(--brand-on); }
+
+/* ---- JOURNÉE EN HEURES ------------------------------------------ */
+.dayline { display: flex; align-items: baseline; gap: 10px; margin: 2px 0 10px; }
+.dayline b { font-family: var(--serif); font-size: 19px; font-weight: 600; }
+.dayline span { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-faint); }
+
+.gap {
+  display: flex; align-items: center; gap: 10px;
+  padding: 3px 4px; color: var(--ink-faint); font-size: 11px;
+  letter-spacing: .08em; text-transform: uppercase;
+}
+.gap::before, .gap::after { content: ''; height: 1px; background: var(--line-soft); }
+.gap::before { width: 52px; flex: none; }
+.gap::after { flex: 1; }
+
+.slot .range {
+  font-family: var(--serif); font-size: 15px; font-weight: 600;
+  font-variant-numeric: tabular-nums; width: 52px; flex: none; padding-top: 1px;
+  line-height: 1.25;
+}
+.slot .range small { display: block; font-size: 11px; font-weight: 400; color: var(--ink-faint); }
+
 /* ---- PASTILLES -------------------------------------------------- */
 /* Les mentions se lisent comme des annotations de carnet, pas comme des jetons */
 .pill {
@@ -662,19 +666,78 @@ function save() {
 function nextId() { return db.seq++; }
 const S = () => db.settings;
 
+/**
+ * Déploie le programme d'exemple livré avec la page : une semaine remplie,
+ * calée sur la semaine en cours, plus l'historique nécessaire pour que les
+ * compteurs et la séance bilan soient parlants.
+ */
+function applySample(plan) {
+  if (!plan) return;
+  const monday = weekStart(new Date());
+  const today = dateStr(new Date());
+
+  const add = (clientId, day, time, duration, location, status, special) => {
+    db.sessions.push({
+      id: nextId(), clientId, recurrenceId: null, originDate: null,
+      startsAt: dateStr(day) + ' ' + time, duration: duration || 60,
+      location: location || null,
+      status: status || (dateStr(day) < today ? 'done' : 'planned'),
+      notes: null, isSpecial: !!special, movedCount: 0, movedAt: null,
+    });
+  };
+
+  // La semaine en cours
+  (plan.week || []).forEach(x => {
+    add(x.c, addDays(monday, x.d - 1), x.t, x.min, x.lieu, null, x.bilan);
+  });
+
+  // Un peu de passé, pour que les numéros de séance aient du sens
+  (plan.history || []).forEach(x => {
+    add(x.c, addDays(monday, -7 * x.weeks + (x.d - 1)), x.t, x.min, x.lieu, 'done');
+  });
+
+  // Encaissements déjà faits
+  (plan.payments || []).forEach(x => {
+    db.payments.push({
+      id: nextId(), clientId: x.c, sessionsCount: x.n,
+      amountCents: x.cents || 0, method: x.method || 'Chèque',
+      paidOn: dateStr(addDays(new Date(), -(x.ago || 0))), note: null,
+    });
+  });
+
+  // Les semaines suivantes sont tenues par les horaires récurrents
+  (plan.recurrences || []).forEach(x => {
+    const rec = {
+      id: nextId(), clientId: x.c, weekday: x.d, startTime: x.t,
+      duration: x.min || 60, intervalWeeks: x.every || 1,
+      anchorDate: dateStr(addDays(monday, 7)), untilDate: null,
+      location: x.lieu || null, active: true,
+    };
+    db.recurrences.push(rec);
+    generate(rec);
+  });
+}
+
 /** Installe le jeu de données livré, une seule fois et sur une base vide. */
 function seedOnce() {
   if (!SEED || !Array.isArray(SEED.clients)) return;
+
   try {
-    if (localStorage.getItem(SEED_KEY)) return;      // déjà proposé une fois
+    if (localStorage.getItem(SEED_KEY) === (SEED.version || '1')) return;
     localStorage.setItem(SEED_KEY, SEED.version || '1');
   } catch (e) {
     return;                                          // stockage indisponible
   }
-  if (db.clients.length || db.sessions.length) return;
 
+  // On ne remplace rien de ce qui a servi : dès qu'un cours, un horaire ou un
+  // encaissement existe, l'application est considérée comme en service.
+  if (db.sessions.length || db.recurrences.length || db.payments.length) return;
+
+  const plan = SEED.sample;
   db = { ...db, ...SEED, settings: { ...DEFAULTS, ...(SEED.settings || {}) } };
   delete db.version;
+  delete db.sample;
+  applySample(plan);
   save();
 }
 
@@ -1222,14 +1285,28 @@ function viewAgenda() {
     const d = addDays(start, i);
     const key = dateStr(d);
     const items = inRange.filter(s => s.startsAt.slice(0, 10) === key);
-    grid += `
-      <section class="day ${isToday(d) ? 'today' : ''} ${items.length ? '' : 'free'}">
-        <div class="dayhead">
-          <b>${DAYS[isoDay(d)]}</b><span>${d.getDate()} ${MONTHS[d.getMonth()]}</span>
-          <i>${items.length || 'libre'}</i>
-        </div>
-        ${items.map(s => slot(s, ord)).join('')}
-      </section>`;
+    if (days === 1) {
+      const total = items.reduce((n, s) => n + s.duration, 0);
+      grid += `
+        <section class="day today">
+          <div class="dayline">
+            <b>${DAYS[isoDay(d)]} ${d.getDate()} ${MONTHS[d.getMonth()]}</b>
+            <span>${items.length ? plural(items.length, 'cours', 'cours') + ' · '
+                     + (total >= 60 ? Math.floor(total / 60) + ' h' + (total % 60 ? pad(total % 60) : '') : total + ' min')
+                   : ''}</span>
+          </div>
+          ${dayBody(items, ord)}
+        </section>`;
+    } else {
+      grid += `
+        <section class="day ${isToday(d) ? 'today' : ''} ${items.length ? '' : 'free'}">
+          <div class="dayhead">
+            <b>${DAYS[isoDay(d)]}</b><span>${d.getDate()} ${MONTHS[d.getMonth()]}</span>
+            <i>${items.length || 'libre'}</i>
+          </div>
+          ${items.map(s => slot(s, ord)).join('')}
+        </section>`;
+    }
   }
 
   // Vue jour : si la journée est vide, on annonce le prochain cours.
@@ -1255,14 +1332,18 @@ function viewAgenda() {
         <div class="label">${esc(label)}</div>
         <button class="iconbtn" data-shift="1" aria-label="Suivant">›</button>
       </div>
+
+      ${weekStrip()}
+
       <div class="row wrap">
         <div class="seg">
-          <button data-mode="week" aria-pressed="${agendaMode === 'week'}">Semaine</button>
           <button data-mode="day" aria-pressed="${agendaMode === 'day'}">Jour</button>
+          <button data-mode="week" aria-pressed="${agendaMode === 'week'}">Semaine</button>
         </div>
         <button class="sm" data-today="1">Aujourd'hui</button>
         <span class="right small muted">${active ? plural(active, 'cours', 'cours') : 'aucun cours'}</span>
       </div>
+
       <div class="${agendaMode === 'week' ? 'week' : ''}">${grid}</div>
       ${dayEmpty}
     </div>
@@ -1283,17 +1364,63 @@ function viewAgenda() {
   }
 }
 
-function slot(s, ord) {
+/** Bandeau des sept jours : charge de la semaine et navigation d'un appui. */
+function weekStrip() {
+  const start = weekStart(cursor);
+  const short = ['', 'lun', 'mar', 'mer', 'jeu', 'ven', 'sam', 'dim'];
+  let out = '<div class="weekstrip">';
+
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(start, i);
+    const key = dateStr(d);
+    const n = db.sessions.filter(x => x.startsAt.slice(0, 10) === key && x.status !== 'cancelled').length;
+    const selected = agendaMode === 'day' && key === dateStr(cursor);
+    out += `
+      <button class="wday ${isToday(d) ? 'today' : ''}" data-day="${key}" aria-pressed="${selected}"
+              title="${esc(DAYS[isoDay(d)] + ' ' + longDate(d))} — ${n} cours">
+        <em>${short[isoDay(d)]}</em>
+        <b>${d.getDate()}</b>
+        <u class="${n ? '' : 'none'}">${n || ''}</u>
+      </button>`;
+  }
+  return out + '</div>';
+}
+
+function slot(s, ord, withRange) {
   const c = client(s.clientId);
   if (!c) return '';
+  const end = new Date(parseDT(s.startsAt).getTime() + s.duration * 60000);
+
+  const time = withRange
+    ? `<span class="range">${hhmm(s.startsAt)}<small>${pad(end.getHours())}h${pad(end.getMinutes())}</small></span>`
+    : `<time>${hhmm(s.startsAt)}</time>`;
+
   return `
     <button class="slot st-${s.status} ${isMilestone(s, c, ord) ? 'milestone' : ''}" data-session="${s.id}">
-      <time>${hhmm(s.startsAt)}</time>
+      ${time}
       <span class="grow">
         <span class="who truncate">${esc(fullName(c))}</span>
         <span class="meta">${s.duration} min${s.location ? ' · ' + esc(s.location) : ''} ${sessionPills(s, c, ord)}</span>
       </span>
     </button>`;
+}
+
+/** Journée détaillée : les cours, et les trous entre eux. */
+function dayBody(items, ord) {
+  if (!items.length) return '';
+  let out = '';
+  items.forEach((s, i) => {
+    if (i > 0) {
+      const prev = items[i - 1];
+      const gap = (parseDT(s.startsAt) - parseDT(prev.startsAt)) / 60000 - prev.duration;
+      if (gap >= 45) {
+        const h = Math.floor(gap / 60), m = Math.round(gap % 60);
+        out += `<div class="gap">${h ? h + ' h ' : ''}${m ? m + ' min' : ''} de libre</div>`;
+      }
+    }
+    out += slot(s, ord, true);
+  });
+  return out;
 }
 
 /* ---- CLIENTS ---------------------------------------------------- */
@@ -2372,7 +2499,7 @@ function openPasteRestore() {
    ================================================================ */
 
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-go],[data-shift],[data-mode],[data-today],[data-goto-next],[data-session],[data-client],'
+  const t = e.target.closest('[data-go],[data-shift],[data-mode],[data-today],[data-goto-next],[data-day],[data-session],[data-client],'
     + '[data-new-session],[data-new-client],[data-edit-client],[data-del-client],[data-rec],[data-new-rec],'
     + '[data-new-pay],[data-del-pay],[data-ack],[data-unack],[data-alerts],[data-month],[data-export],'
     + '[data-import],[data-import-vcf],[data-paste],[data-save-settings],[data-reset],[data-demo],[data-send-mail],[data-filter]');
@@ -2384,6 +2511,11 @@ document.addEventListener('click', e => {
   if (d.mode) { agendaMode = d.mode; localStorage.setItem('lmt-view', d.mode); return render(); }
   if (d.today) { cursor = new Date(); return render(); }
   if (d.gotoNext) { cursor = parseDT(d.gotoNext); return render(); }
+  if (d.day) {
+    cursor = parseDT(d.day);
+    if (agendaMode !== 'day') { agendaMode = 'day'; localStorage.setItem('lmt-view', 'day'); }
+    return render();
+  }
   if (d.filter !== undefined && t.hasAttribute('data-filter')) { clientFilter = d.filter; return render(); }
 
   if (d.session) { if (d.close) closeSheet(); return sessionSheet(Number(d.session)); }

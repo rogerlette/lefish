@@ -85,8 +85,8 @@ function applyTheme(mode) {
 /* ---- DÉMARRAGE ---- */
 
 document.addEventListener('DOMContentLoaded', async () => {
-  applyTheme(localStorage.getItem('theme')
-    || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+  // L'application s'ouvre en clair ; le bouton de la barre du haut bascule.
+  applyTheme(localStorage.getItem('theme') || 'light');
 
   el('btnTheme').onclick = () =>
     applyTheme(document.body.classList.contains('dark') ? 'light' : 'dark');
