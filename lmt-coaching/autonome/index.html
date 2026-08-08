@@ -599,6 +599,15 @@ label {
    ================================================================ */
 
 const KEY = 'lmt-coaching-v1';
+const SEED_KEY = 'lmt-coaching-seed';
+
+/**
+ * Données livrées avec la page. Elles ne sont chargées qu'une fois, et
+ * uniquement si l'application est encore vide : rien de ce que vous saisissez
+ * ne peut être écrasé, et « Tout effacer » reste définitif.
+ * Vaut null dans le dépôt ; renseigné à la publication.
+ */
+const SEED = null;
 
 const DEFAULTS = {
   coachName: 'LMT Coaching',
@@ -653,8 +662,25 @@ function save() {
 function nextId() { return db.seq++; }
 const S = () => db.settings;
 
+/** Installe le jeu de données livré, une seule fois et sur une base vide. */
+function seedOnce() {
+  if (!SEED || !Array.isArray(SEED.clients)) return;
+  try {
+    if (localStorage.getItem(SEED_KEY)) return;      // déjà proposé une fois
+    localStorage.setItem(SEED_KEY, SEED.version || '1');
+  } catch (e) {
+    return;                                          // stockage indisponible
+  }
+  if (db.clients.length || db.sessions.length) return;
+
+  db = { ...db, ...SEED, settings: { ...DEFAULTS, ...(SEED.settings || {}) } };
+  delete db.version;
+  save();
+}
+
 /* ================================================================
    2. OUTILS
+
    ================================================================ */
 
 const DAYS = ['', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
@@ -2457,6 +2483,7 @@ document.addEventListener('touchend', e => {
    ================================================================ */
 
 load();
+seedOnce();
 if (!storageOk) {
   showBanner("Ce navigateur bloque l'enregistrement local (navigation privée ?). "
            + 'Les données seront perdues à la fermeture.');
