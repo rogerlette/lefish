@@ -717,22 +717,35 @@ function applySample(plan) {
 /** Installe le jeu de données livré, une seule fois et sur une base vide. */
 function seedOnce() {
   if (!SEED || !Array.isArray(SEED.clients)) return;
+  const version = SEED.version || '1';
 
+  let installee;
   try {
-    if (localStorage.getItem(SEED_KEY) === (SEED.version || '1')) return;
-    localStorage.setItem(SEED_KEY, SEED.version || '1');
+    installee = localStorage.getItem(SEED_KEY);
+    if (installee === version) return;               // déjà à jour
+    localStorage.setItem(SEED_KEY, version);
   } catch (e) {
     return;                                          // stockage indisponible
   }
 
-  // On ne remplace rien de ce qui a servi : dès qu'un cours, un horaire ou un
-  // encaissement existe, l'application est considérée comme en service.
-  if (db.sessions.length || db.recurrences.length || db.payments.length) return;
+  const vierge = !db.sessions.length && !db.recurrences.length && !db.payments.length;
+  // Une version antérieure du jeu livré est en place : elle peut être remplacée.
+  const demo = !!installee || !!db.demo;
+
+  // Données saisies par le coach : on n'y touche pas.
+  if (!vierge && !demo) return;
 
   const plan = SEED.sample;
-  db = { ...db, ...SEED, settings: { ...DEFAULTS, ...(SEED.settings || {}) } };
+  db = {
+    seq: 1, clients: [], sessions: [], recurrences: [], payments: [],
+    skips: [], acks: {}, reminded: {},
+    ...SEED,
+    settings: { ...DEFAULTS, ...(SEED.settings || {}) },
+  };
   delete db.version;
   delete db.sample;
+  db.demo = version;                                 // trace : ces données sont un exemple
+  db.seq = db.clients.reduce((m, c) => Math.max(m, c.id), 0) + 1;
   applySample(plan);
   save();
 }
@@ -2588,6 +2601,7 @@ document.addEventListener('click', e => {
     if (!confirm('Confirmez : clients, cours et paiements seront perdus.')) return;
     db = { seq: 1, clients: [], sessions: [], recurrences: [], payments: [],
            skips: [], acks: {}, reminded: {}, settings: { ...DEFAULTS } };
+    try { localStorage.setItem(SEED_KEY, 'efface'); } catch (e) { /* sans effet */ }
     save(); toast('Données effacées'); return go('agenda');
   }
 });

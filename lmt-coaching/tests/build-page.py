@@ -5,7 +5,7 @@ APP = '/home/user/lefish/lmt-coaching/autonome/index.html'
 SRC = '/tmp/claude-0/-home-user-lefish/cf0aa78f-b5a5-595b-a7d8-3d88a4a3f38d/scratchpad/LMT-39-clients.json'
 
 seed = json.load(open(SRC))
-seed['version'] = 'lmt-2026-08-08-e'
+seed['version'] = 'lmt-2026-08-08-f'
 
 def cid(n):
     return seed['clients'][n]['id']
@@ -40,7 +40,7 @@ for jour in sorted(HORAIRES):
 
 # ---- Semaines matérialisées : trois semaines passées, la semaine en cours ----
 SEMAINES = []
-for decalage in (-3, -2, -1, 0):
+for decalage in (-6, -5, -4, -3, -2, -1, 0):
     for x in TEMPLATE:
         SEMAINES.append({'w': decalage, 'd': x['d'], 't': x['t'], 'c': x['c'], 'lieu': x['lieu']})
 
